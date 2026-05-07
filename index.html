@@ -1,44 +1,835 @@
 <!DOCTYPE html>
-<html>
-<head><title>TrenchReads</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrenchReads — Rugcheck</title>
 <style>
-body{background:#0a0a0a;color:#e0e0e0;font-family:monospace;max-width:700px;margin:40px auto;padding:20px}
-#chat{height:500px;overflow-y:auto;border:1px solid #333;padding:15px;margin-bottom:10px;border-radius:8px}
-.user{text-align:right;color:#00ff88;margin:10px 0}
-.agent{text-align:left;color:#e0e0e0;margin:10px 0;border-left:3px solid #ff6b00;padding-left:10px}
-input{width:80%;padding:10px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:4px}
-button{padding:10px 20px;background:#ff6b00;color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:bold}
-</style></head>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #1f1f1f;
+    --orange: #f97316;
+    --orange-dim: #7c3910;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --text: #e5e5e5;
+    --muted: #555;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: 
+      radial-gradient(ellipse at 20% 20%, rgba(249,115,22,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(239,68,68,0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 680px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--orange);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--orange);
+    flex-shrink: 0;
+  }
+
+  .brand {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+  }
+
+  .brand span { color: var(--orange); }
+
+  .tag {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* TAGLINE */
+  .tagline {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  /* INPUT AREA */
+  .input-wrap {
+    display: flex;
+    gap: 0;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+
+  .input-wrap:focus-within {
+    border-color: var(--orange);
+  }
+
+  .input-prefix {
+    padding: 14px 16px;
+    color: var(--orange);
+    font-size: 13px;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 14px 16px;
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  .check-btn {
+    background: var(--orange);
+    color: #000;
+    border: none;
+    padding: 14px 24px;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+  }
+
+  .check-btn:hover { opacity: 0.85; }
+  .check-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* API KEY */
+  .key-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+    align-items: center;
+  }
+
+  .key-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+
+  input[type="password"] {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--border);
+    outline: none;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  input[type="password"]:focus { border-color: var(--orange-dim); color: var(--text); }
+
+  /* LOADING */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 48px 0;
+  }
+
+  .loading.show { display: block; }
+
+  .loader-text {
+    font-size: 11px;
+    color: var(--orange);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  .steps {
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 2;
+  }
+
+  .step { opacity: 0; transition: opacity 0.4s; }
+  .step.active { opacity: 1; color: var(--text); }
+  .step.done { opacity: 1; color: var(--green); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* RESULT */
+  .result {
+    display: none;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .result.show { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* VERDICT BANNER */
+  .verdict-banner {
+    padding: 20px 24px;
+    margin-bottom: 1px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .verdict-banner.safe { background: rgba(34,197,94,0.08); border-left: 3px solid var(--green); }
+  .verdict-banner.risky { background: rgba(234,179,8,0.08); border-left: 3px solid var(--yellow); }
+  .verdict-banner.danger { background: rgba(239,68,68,0.08); border-left: 3px solid var(--red); }
+
+  .verdict-icon { font-size: 28px; flex-shrink: 0; }
+
+  .verdict-label {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+
+  .verdict-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* DATA GRID */
+  .data-grid {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 1px;
+  }
+
+  .data-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+
+  .data-row:last-child { border-bottom: none; }
+
+  .data-key {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    width: 140px;
+    flex-shrink: 0;
+  }
+
+  .data-val {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+    word-break: break-all;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .badge.safe { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge.warn { background: rgba(234,179,8,0.15); color: var(--yellow); }
+  .badge.danger { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge.neutral { background: rgba(255,255,255,0.05); color: var(--muted); }
+
+  /* AI ANALYSIS */
+  .analysis-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    margin-bottom: 1px;
+  }
+
+  .analysis-label {
+    font-size: 10px;
+    color: var(--orange);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .analysis-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .analysis-text {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #ccc;
+    white-space: pre-wrap;
+  }
+
+  /* FOOTER */
+  .result-footer {
+    padding: 12px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .result-footer span {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .result-footer .addr {
+    color: var(--text);
+    font-size: 11px;
+  }
+
+  /* NEW CHECK */
+  .new-check-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    margin-top: 20px;
+    width: 100%;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .new-check-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* ERROR */
+  .error-box {
+    display: none;
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--red);
+    margin-top: 8px;
+  }
+
+  .error-box.show { display: block; }
+
+  /* DISCLAIMER */
+  .disclaimer {
+    margin-top: 40px;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.8;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
 <body>
-<h2 style="color:#ff6b00">#TrenchReads</h2>
-<div id="chat"></div>
-<input id="msg" placeholder="drop a contract address or ask anything..." onkeydown="if(event.key==='Enter')send()"/>
-<button onclick="send()">Send</button>
+<div class="wrap">
+
+  <div class="header">
+    <div class="logo">TR</div>
+    <div class="brand">#<span>TrenchReads</span></div>
+    <div class="tag">Rugcheck</div>
+  </div>
+
+  <div class="tagline">checked onchain. not on vibes.</div>
+
+  <!-- INPUT -->
+  <div id="inputSection">
+    <div class="input-wrap">
+      <div class="input-prefix">CA</div>
+      <input type="text" id="caInput" placeholder="paste solana contract address..." autocomplete="off" spellcheck="false" />
+      <button class="check-btn" id="checkBtn" onclick="runCheck()">CHECK</button>
+    </div>
+
+    <div class="key-row">
+      <span class="key-label">Groq Key</span>
+      <input type="password" id="groqKey" placeholder="gsk_..." />
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" id="loadingSection">
+    <div class="loader-text">scanning onchain data...</div>
+    <div class="steps">
+      <div class="step" id="step1">→ fetching token data from GoPlus</div>
+      <div class="step" id="step2">→ running security analysis</div>
+      <div class="step" id="step3">→ generating verdict</div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result" id="resultSection">
+    <div class="verdict-banner" id="verdictBanner">
+      <div class="verdict-icon" id="verdictIcon"></div>
+      <div>
+        <div class="verdict-label" id="verdictLabel"></div>
+        <div class="verdict-sub" id="verdictSub"></div>
+      </div>
+    </div>
+
+    <div class="data-grid">
+      <div class="data-row">
+        <div class="data-key">Token</div>
+        <div class="data-val" id="tokenName" style="display:flex;align-items:center;gap:10px;"><img id="tokenLogo" src="" style="width:28px;height:28px;border-radius:50%;display:none;border:1px solid #1f1f1f;" onerror="this.style.display='none'"><span id="tokenNameText">—</span></div>
+      </div>
+      <div class="data-row">
+        <div class="data-key">Contract</div>
+        <div class="data-val" id="contractAddr" style="font-size:11px; color: var(--muted);">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-key">Mint Auth</div>
+        <div class="data-val" id="mintAuth">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-key">Freeze Auth</div>
+        <div class="data-val" id="freezeAuth">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-key">Closable</div>
+        <div class="data-val" id="closable">—</div>
+      </div>
+      <div class="data-row">
+        <div class="data-key">Honeypot Risk</div>
+        <div class="data-val" id="honeypot">—</div>
+      </div>
+    </div>
+
+    <div class="analysis-box">
+      <div class="analysis-label">AI Verdict</div>
+      <div class="analysis-text" id="aiAnalysis">analyzing...</div>
+    </div>
+
+    <div class="result-footer">
+      <span>TRENCHREADS</span>
+      <span class="addr" id="footerAddr"></span>
+      <span id="checkTime"></span>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:20px;">
+      <button class="new-check-btn" onclick="shareToX()" style="flex:1; border-color:#1d9bf0; color:#1d9bf0;">→ share on X</button>
+      <button class="new-check-btn" onclick="copyVerdict()" id="copyBtn" style="flex:1;">→ copy verdict</button>
+    </div>
+    <button class="new-check-btn" onclick="resetUI()" style="margin-top:8px;">→ check another contract</button>
+  </div>
+
+  <div class="disclaimer">
+    not financial advice. dyor. checked onchain not on vibes.
+  </div>
+
+</div>
+
 <script>
-const AGENT_ID = '80ea4745-c648-0c79-86b5-b003c1b83fdc';
-async function send(){
-  const msg=document.getElementById('msg').value.trim();
-  if(!msg)return;
-  addMsg(msg,'user');
-  document.getElementById('msg').value='';
-  let finalMsg=msg;
-  try{
-    const r=await fetch('http://localhost:3001/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
-    const d=await r.json();
-    finalMsg=d.enriched||msg;
-  }catch(e){console.log('proxy error',e)}
-  try{
-    const r=await fetch(`http://localhost:3000/api/agents/${AGENT_ID}/message`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:finalMsg,userId:'user',userName:'user'})});
-    const d=await r.json();
-    const reply=Array.isArray(d)?d[0]?.text:d?.text;
-    if(reply)addMsg(reply,'agent');
-    else addMsg('no response received','agent');
-  }catch(e){addMsg('error: '+e.message,'agent')}
+// Save Groq key to localStorage
+const groqInput = document.getElementById('groqKey');
+if (localStorage.getItem('groqKey')) {
+  groqInput.value = localStorage.getItem('groqKey');
 }
-function addMsg(text,type){
-  const div=document.getElementById('chat');
-  div.innerHTML+=`<div class="${type}">${text}</div>`;
-  div.scrollTop=div.scrollHeight;
+groqInput.addEventListener('change', () => {
+  localStorage.setItem('groqKey', groqInput.value);
+});
+
+// Enter key support
+document.getElementById('caInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') runCheck();
+});
+
+async function runCheck() {
+  const ca = document.getElementById('caInput').value.trim();
+  const groqKey = document.getElementById('groqKey').value.trim();
+
+  if (!ca) return showError('drop a contract address first.');
+  if (!groqKey) return showError('add your groq api key above. get one free at console.groq.com');
+
+  // Validate Solana address format
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(ca) && !/^0x[a-fA-F0-9]{40}$/.test(ca)) {
+    return showError('that doesn\'t look like a valid solana address.');
+  }
+
+  hideError();
+  showLoading();
+
+  try {
+    // Step 1 - GoPlus data via proxy
+    activateStep(1);
+    let goplusData = null;
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const proxyRes = await fetch('/api/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: ca }),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      const proxyJson = await proxyRes.json();
+      goplusData = proxyJson.enriched || null;
+    } catch(e) {
+      // Proxy not running or timed out — fallback to direct GoPlus
+      try {
+        const controller2 = new AbortController();
+        const timer2 = setTimeout(() => controller2.abort(), 5000);
+        const chain = detectChain(ca);
+        const gpUrl = chain === "ethereum" ? `https://api.gopluslabs.io/api/v1/token_security/1?contract_addresses=${ca}` : `https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=${ca}`;
+        const gpRes = await fetch(gpUrl, {
+          signal: controller2.signal
+        });
+        clearTimeout(timer2);
+        const gpJson = await gpRes.json();
+        const td = gpJson.result?.[ca] ?? {};
+        goplusData = buildEnrichedFromGoPlus(td, ca);
+      } catch(e2) {
+        // Both failed — proceed with address only
+        goplusData = `token: ${ca.slice(0,8)}\naddress: ${ca}\nmint authority: unknown\nfreeze authority: unknown\nclosable: unknown\nhoneypot risk: unknown`;
+      }
+    }
+
+    // Step 2 - Parse data for display
+    activateStep(2);
+    const parsed = parseEnrichedData(goplusData, ca);
+    renderDataFields(parsed, ca);
+    await sleep(600);
+
+    // Step 3 - Groq analysis
+    activateStep(3);
+    const analysis = await callGroq(groqKey, ca, goplusData);
+    await sleep(400);
+
+    showResult(analysis, parsed);
+
+  } catch(err) {
+    hideLoading();
+    showError('something went wrong: ' + err.message);
+  }
+}
+
+function buildEnrichedFromGoPlus(td, ca) {
+  const name = td.token_name ?? ca.slice(0,8);
+  const closable = td.closable?.status === '1' ? 'YES-RISK' : 'safe';
+  const freeze = td.balance_mutable?.status === '1' ? 'YES-RISK' : 'safe';
+  const mint = td.mintable?.status === '1' ? 'YES-RISK' : 'safe';
+  const honeypot = td.honeypot_with_same_creator ?? 'unknown';
+  return `[RUGCHECK DATA]\ntoken: ${name}\naddress: ${ca}\nmint authority: ${mint}\nfreeze authority: ${freeze}\nclosable: ${closable}\nhoneypot risk: ${honeypot}\n[END]`;
+}
+
+function parseEnrichedData(enriched, ca) {
+  const get = (key) => {
+    const match = enriched?.match(new RegExp(key + ':\\s*([^\\n]+)'));
+    return match ? match[1].trim() : 'unknown';
+  };
+  return {
+    tokenName: get('token'),
+    mintAuth: get('mint authority'),
+    freezeAuth: get('freeze authority'),
+    closable: get('closable'),
+    honeypot: get('honeypot risk'),
+  };
+}
+
+function renderDataFields(parsed, ca) {
+  document.getElementById('tokenNameText').textContent = parsed.tokenName || ca.slice(0,8);
+  fetchTokenLogo(ca, detectChain(ca));
+  document.getElementById('contractAddr').textContent = ca;
+  document.getElementById('footerAddr').textContent = ca.slice(0,8) + '...' + ca.slice(-4);
+
+  setBadge('mintAuth', parsed.mintAuth);
+  setBadge('freezeAuth', parsed.freezeAuth);
+  setBadge('closable', parsed.closable);
+
+  const hp = document.getElementById('honeypot');
+  hp.innerHTML = parsed.honeypot === 'unknown' || parsed.honeypot === '0'
+    ? '<span class="badge safe">None detected</span>'
+    : `<span class="badge warn">${parsed.honeypot}</span>`;
+}
+
+function setBadge(id, val) {
+  const el = document.getElementById(id);
+  if (!val || val === 'unknown') {
+    el.innerHTML = '<span class="badge neutral">unknown</span>';
+  } else if (val.toLowerCase().includes('risk') || val.toLowerCase().includes('yes')) {
+    el.innerHTML = `<span class="badge danger">${val}</span>`;
+  } else {
+    el.innerHTML = `<span class="badge safe">${val}</span>`;
+  }
+}
+
+async function callGroq(key, ca, enriched) {
+  const systemPrompt = `You are TrenchReads, a sharp memecoin analyst on CT. Memecoins are volatile by nature — that is the game. Flag REAL red flags only. mint auth revoked = good. freeze disabled = good. closable = normal for pump.fun, not automatically bad. no honeypot = good. Only say danger if genuine rug indicators exist. Be direct, lowercase, short punchy sentences. Never say bullish or LFG. End every response: checked onchain not on vibes - TrenchReads`;
+
+  const userPrompt = `analyze this solana memecoin:\n\n${enriched || 'contract: ' + ca + '\nno data available'}\n\nIMPORTANT RULES: if mint authority is YES-RISK, tell them to AVOID — dev can print unlimited tokens and dump. if freeze auth is YES-RISK, tell them to AVOID — funds can be frozen. if all clear, say safe to consider. give verdict (safe/risky/avoid), key flags, final call. short and direct.`;
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      max_tokens: 300,
+      temperature: 0.7,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'groq api error');
+  }
+
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+function showResult(analysis, parsed) {
+  hideLoading();
+
+  // Determine verdict from analysis text
+  const text = analysis.toLowerCase();
+  const banner = document.getElementById('verdictBanner');
+  const icon = document.getElementById('verdictIcon');
+  const label = document.getElementById('verdictLabel');
+  const sub = document.getElementById('verdictSub');
+
+  const hasRealRisk = parsed.mintAuth?.includes('RISK') || 
+                      parsed.freezeAuth?.includes('RISK') || 
+                      parsed.closable?.includes('RISK');
+
+  const dataUnknown = parsed.mintAuth === 'unknown' && 
+                      parsed.freezeAuth === 'unknown' && 
+                      parsed.closable === 'unknown';
+
+  if (hasRealRisk || text.includes('danger') || text.includes('rug') || text.includes('scam')) {
+    banner.className = 'verdict-banner danger';
+    icon.textContent = '⚠️';
+    label.textContent = 'HIGH RISK';
+    label.style.color = '#ef4444';
+    sub.textContent = 'red flags detected onchain';
+  } else if (dataUnknown) {
+    banner.className = 'verdict-banner risky';
+    icon.textContent = '🔍';
+    label.textContent = 'DATA UNAVAILABLE';
+    label.style.color = '#eab308';
+    sub.textContent = 'could not fetch onchain data — dyor';
+  } else if (text.includes('risky') || text.includes('caution') || text.includes('careful')) {
+    banner.className = 'verdict-banner risky';
+    icon.textContent = '🟡';
+    label.textContent = 'PROCEED WITH CAUTION';
+    label.style.color = '#eab308';
+    sub.textContent = 'some risk factors present';
+  } else {
+    banner.className = 'verdict-banner safe';
+    icon.textContent = '✅';
+    label.textContent = 'RELATIVELY CLEAN';
+    label.style.color = '#22c55e';
+    sub.textContent = 'no major red flags detected';
+  }
+
+  document.getElementById('aiAnalysis').textContent = analysis;
+  document.getElementById('checkTime').textContent = new Date().toLocaleTimeString();
+
+  document.getElementById('resultSection').classList.add('show');
+}
+
+function resetUI() {
+  document.getElementById('resultSection').classList.remove('show');
+  document.getElementById('caInput').value = '';
+  document.getElementById('caInput').focus();
+  hideError();
+}
+
+function showLoading() {
+  document.getElementById('loadingSection').classList.add('show');
+  document.getElementById('checkBtn').disabled = true;
+  document.getElementById('step1').className = 'step';
+  document.getElementById('step2').className = 'step';
+  document.getElementById('step3').className = 'step';
+}
+
+function hideLoading() {
+  document.getElementById('loadingSection').classList.remove('show');
+  document.getElementById('checkBtn').disabled = false;
+}
+
+function activateStep(n) {
+  for (let i = 1; i < n; i++) {
+    document.getElementById(`step${i}`).className = 'step done';
+  }
+  document.getElementById(`step${n}`).className = 'step active';
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠ ' + msg;
+  box.classList.add('show');
+}
+
+function hideError() {
+  document.getElementById('errorBox').classList.remove('show');
+}
+
+async function fetchTokenLogo(ca, chain) {
+  try {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ca}`, { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    const pair = data.pairs?.[0];
+    if (pair?.baseToken?.address?.toLowerCase() === ca.toLowerCase() || pair?.baseToken?.address === ca) {
+      const logo = pair?.info?.imageUrl || pair?.baseToken?.logoURI || null;
+      if (logo) {
+        const img = document.getElementById("tokenLogo");
+        img.src = logo;
+        img.style.display = "block";
+        const nameSpan = document.getElementById("tokenNameText");
+        if (pair.baseToken.symbol) nameSpan.textContent = pair.baseToken.symbol;
+      }
+    }
+  } catch(e) {}
+}
+
+function detectChain(ca) {
+  if (/^0x[a-fA-F0-9]{40}$/.test(ca)) return "ethereum";
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(ca)) return "solana";
+  return "unknown";
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
 }
 </script>
-</body></html>
+</body>
+</html>
+<script>
+function shareToX() {
+  const token = document.getElementById('tokenNameText').textContent;
+  const ca = document.getElementById('contractAddr').textContent;
+  const verdictLabel = document.getElementById('verdictLabel').textContent;
+  const mintAuth = document.getElementById('mintAuth').textContent;
+  const freezeAuth = document.getElementById('freezeAuth').textContent;
+  const aiText = document.getElementById('aiAnalysis').textContent;
+  
+  const verdict = verdictLabel === 'RELATIVELY CLEAN' ? '✅ clean' : 
+                  verdictLabel === 'HIGH RISK' ? '⚠️ high risk' : 
+                  verdictLabel === 'DATA UNAVAILABLE' ? '🔍 unverified' : '🟡 caution';
+
+  const firstLine = aiText.split('\n')[0] || '';
+
+  const tweet = `just ran ${token} through #TrenchReads\n\nverdict: ${verdict}\nmint auth: ${mintAuth}\nfreeze auth: ${freezeAuth}\n\n${firstLine}\n\nca: ${ca.slice(0,8)}...${ca.slice(-4)}\n\nchecked onchain not on vibes — @ADAMINDA_1`;
+
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`;
+  window.open(url, '_blank');
+}
+
+function copyVerdict() {
+  const token = document.getElementById('tokenNameText').textContent;
+  const ca = document.getElementById('contractAddr').textContent;
+  const verdictLabel = document.getElementById('verdictLabel').textContent;
+  const mintAuth = document.getElementById('mintAuth').textContent;
+  const freezeAuth = document.getElementById('freezeAuth').textContent;
+  const closable = document.getElementById('closable').textContent;
+  const honeypot = document.getElementById('honeypot').textContent;
+  const aiText = document.getElementById('aiAnalysis').textContent;
+
+  const text = `#TrenchReads — ${token}\n\nverdict: ${verdictLabel}\n\nmint auth: ${mintAuth}\nfreeze auth: ${freezeAuth}\nclosable: ${closable}\nhoneypot: ${honeypot}\n\n${aiText}\n\nca: ${ca}\n\nchecked onchain not on vibes - TrenchReads`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ copied!';
+    btn.style.color = '#22c55e';
+    btn.style.borderColor = '#22c55e';
+    setTimeout(() => {
+      btn.textContent = '→ copy verdict';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2000);
+  });
+}
+</script>
