@@ -1,0 +1,8 @@
+{
+    "name": "@elizaos/plugin-rugcheck",
+    "version": "1.0.0",
+    "main": "src/index.ts",
+    "dependencies": {
+        "@elizaos/core": "workspace:*"
+    }
+}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head><title>TrenchReads</title>
+<style>
+body{background:#0a0a0a;color:#e0e0e0;font-family:monospace;max-width:700px;margin:40px auto;padding:20px}
+#chat{height:500px;overflow-y:auto;border:1px solid #333;padding:15px;margin-bottom:10px;border-radius:8px}
+.user{text-align:right;color:#00ff88;margin:10px 0}
+.agent{text-align:left;color:#e0e0e0;margin:10px 0;border-left:3px solid #ff6b00;padding-left:10px}
+input{width:80%;padding:10px;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:4px}
+button{padding:10px 20px;background:#ff6b00;color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:bold}
+</style></head>
+<body>
+<h2 style="color:#ff6b00">#TrenchReads</h2>
+<div id="chat"></div>
+<input id="msg" placeholder="drop a contract address or ask anything..." onkeydown="if(event.key==='Enter')send()"/>
+<button onclick="send()">Send</button>
+<script>
+const AGENT_ID = '80ea4745-c648-0c79-86b5-b003c1b83fdc';
+async function send(){
+  const msg=document.getElementById('msg').value.trim();
+  if(!msg)return;
+  addMsg(msg,'user');
+  document.getElementById('msg').value='';
+  let finalMsg=msg;
+  try{
+    const r=await fetch('http://localhost:3001/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    const d=await r.json();
+    finalMsg=d.enriched||msg;
+  }catch(e){console.log('proxy error',e)}
+  try{
+    const r=await fetch(`http://localhost:3000/api/agents/${AGENT_ID}/message`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:finalMsg,userId:'user',userName:'user'})});
+    const d=await r.json();
+    const reply=Array.isArray(d)?d[0]?.text:d?.text;
+    if(reply)addMsg(reply,'agent');
+    else addMsg('no response received','agent');
+  }catch(e){addMsg('error: '+e.message,'agent')}
+}
+function addMsg(text,type){
+  const div=document.getElementById('chat');
+  div.innerHTML+=`<div class="${type}">${text}</div>`;
+  div.scrollTop=div.scrollHeight;
+}
+</script>
+</body></html>
