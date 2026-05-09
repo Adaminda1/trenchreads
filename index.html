@@ -351,7 +351,7 @@ async function run() {
   try {
     stp(1, 'on'); stp(2, 'on');
     const r = await callProxy(ca);
-    S.dex = r.dex; S.sec = r.sec; S.chain = r.chain;
+    S.dex = r.dex; S.sec = r.sec; S.chain = r.chain; S.ai = r.ai;
     stp(1, 'dn'); stp(2, 'dn');
     stp(3, 'on');
     await sleep(200);
@@ -567,7 +567,7 @@ function render() {
   const vcEl = document.getElementById('vc');
   vcEl.className = `vc ${sc.cls}`;
   document.getElementById('vnum').textContent = sc.score;
-  document.getElementById('vt').textContent = sc.verdict;
+  document.getElementById('vt').textContent = sc.verdict; const aiEl = document.getElementById('aiverdict'); if (aiEl) { aiEl.textContent = S.ai || ''; aiEl.style.display = S.ai ? 'block' : 'none'; }
   document.getElementById('vs').textContent = { safe: 'no major red flags detected', caution: 'some risks present — dyor before aping', danger: 'significant risks detected — avoid' }[sc.cls];
 
   const sym = dex?.symbol || ca.slice(0, 8);
