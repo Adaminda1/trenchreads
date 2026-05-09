@@ -4,7 +4,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const { address, chain } = req.query;
-  if (!address) return res.status(400).json({ error: 'No address provided' });
+
+  // health check ping
+  if (!address) return res.status(200).json({ status: 'ok' });
 
   try {
     const dex = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`);
