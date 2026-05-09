@@ -3,64 +3,75 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   const { address } = req.body || {};
   if (!address || address === 'test') return res.status(200).json({ status: 'ok' });
-
   function detectChain(a) {
     if (/^0x[a-fA-F0-9]{40}$/.test(a)) return 'evm';
     if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return 'solana';
     return 'unknown';
   }
-
   async function dex(address) {
     const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`);
     const data = await r.json();
     if (!data?.pairs?.length) return null;
-    const pairs = data.pairs.sort((a,b) => (b.liquidity?.usd||0)-(a.liquidity?.usd||0));
+    const pairs = data.pairs.sort((a,b)=>(b.liquidity?.usd||0)-(a.liquidity?.usd||0));
     const p = pairs[0];
     const created = p.pairCreatedAt ? new Date(p.pairCreatedAt) : null;
-    const ageMs = created ? Date.now() - created.getTime() : null;
+    const ageMs = created ? Date.now()-created.getTime() : null;
     return {
-      name: p.baseToken?.name || address.slice(0,8),
-      symbol: p.baseToken?.symbol || '???',
-      logo: p.info?.imageUrl || null,
-      price: p.priceUsd ? parseFloat(p.priceUsd) : null,
-      mcap: p.marketCap || p.fdv || null,
-      liquidity: p.liquidity?.usd || 0,
-      volume24h: p.volume?.h24 || 0,
-      change24h: p.priceChange?.h24 || null,
+      name: p.baseToken?.name||address.slice(0,8),
+      symbol: p.baseToken?.symbol||'???',
+      logo: p.info?.imageUrl||null,
+      price: p.priceUsd?parseFloat(p.priceUsd):null,
+      mcap: p.marketCap||p.fdv||null,
+      liquidity: p.liquidity?.usd||0,
+      volume24h: p.volume?.h24||0,
+      change24h: p.priceChange?.h24||null,
       txns24h: (p.txns?.h24?.buys||0)+(p.txns?.h24?.sells||0),
-      buys24h: p.txns?.h24?.buys || 0,
-      sells24h: p.txns?.h24?.sells || 0,
-      ageDays: ageMs ? Math.floor(ageMs/86400000) : null,
-      ageHours: ageMs ? Math.floor(ageMs/3600000) : null,
-      dex: p.dexId || 'unknown',
-      chainId: p.chainId || 'unknown',
+      buys24h: p.txns?.h24?.buys||0,
+      sells24h: p.txns?.h24?.sells||0,
+      ageDays: ageMs?Math.floor(ageMs/86400000):null,
+      ageHours: ageMs?Math.floor(ageMs/3600000):null,
+      dex: p.dexId||'unknown',
+      chainId: p.chainId||'unknown',
+      websites: p.info?.websites||[],
+      socials: p.info?.socials||[],
     };
   }
-
   async function secSol(address) {
     const r = await fetch(`https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=${address}`);
     const data = await r.json();
     if (!data?.result) return null;
-    const td = data.result[address] || {};
+    const td = data.result[address]||{};
     return {
       mintAuth: td.mintable?.status==='1'?'RISK':td.mintable?.status==='0'?'safe':'unknown',
       freezeAuth: td.balance_mutable?.status==='1'?'RISK':td.balance_mutable?.status==='0'?'safe':'unknown',
       closable: td.closable?.status==='1'?'yes':'no',
       honeypot: 'n/a',
+      buyTax: 'unknown',
+      sellTax: 'unknown',
+      isOpenSource: 'unknown',
+      hiddenOwner: 'unknown',
+      canTakeBack: 'unknown',
+      isProxy: 'unknown',
+      isBlacklisted: 'unknown',
+      transferPausable: 'unknown',
+      ownershipRenounced: 'unknown',
+      top10HolderPct: td.top_10_holder_rate?(parseFloat(td.top_10_holder_rate)*100).toFixed(1):null,
+      creatorPct: td.creator_percentage?(parseFloat(td.creator_percentage)*100).toFixed(1):null,
+      ownerPct: null,
+      holders: td.holder_count||null,
+      topHolders: td.holders||null,
       chain: 'Solana',
     };
   }
-
   async function secEVM(address) {
     const chains = [{id:'1',name:'Ethereum'},{id:'56',name:'BSC'},{id:'137',name:'Polygon'},{id:'42161',name:'Arbitrum'},{id:'8453',name:'Base'},{id:'43114',name:'Avalanche'}];
     for (const chain of chains) {
       const r = await fetch(`https://api.gopluslabs.io/api/v1/token_security/${chain.id}?contract_addresses=${address}`);
       const data = await r.json();
       if (!data?.result) continue;
-      const td = data.result[address.toLowerCase()] || data.result[address] || {};
+      const td = data.result[address.toLowerCase()]||data.result[address]||{};
       if (!Object.keys(td).length) continue;
       return {
         mintAuth: td.mintable==='1'?'RISK':td.mintable==='0'?'safe':'unknown',
@@ -76,17 +87,21 @@ export default async function handler(req, res) {
         isBlacklisted: td.is_blacklisted==='1'?'RISK':'no',
         transferPausable: td.transfer_pausable==='1'?'RISK':'no',
         ownershipRenounced: td.owner_address===''||td.owner_address==='0x0000000000000000000000000000000000000000'?'yes':'no',
+        top10HolderPct: td.holder_count?null:null,
+        creatorPct: td.creator_percent?(parseFloat(td.creator_percent)*100).toFixed(1):null,
+        ownerPct: td.owner_percent?(parseFloat(td.owner_percent)*100).toFixed(1):null,
+        holders: td.holder_count||null,
+        topHolders: td.holders||null,
         chain: chain.name,
       };
     }
     return null;
   }
-
   try {
     const chain = detectChain(address);
-    const [d, s] = await Promise.all([dex(address), chain==='solana'?secSol(address):secEVM(address)]);
-    res.status(200).json({ dex: d, sec: s, chain });
+    const [d,s] = await Promise.all([dex(address), chain==='solana'?secSol(address):secEVM(address)]);
+    res.status(200).json({dex:d, sec:s, chain});
   } catch(e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({error:e.message});
   }
 }
