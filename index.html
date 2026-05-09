@@ -398,7 +398,7 @@ function calcScore(dex, sec) {
   // LIQ/MCAP — only penalise if there is also trading activity
   if (liq > 0 && mcap > 0) {
     const r = (liq / mcap) * 100;
-    if (r < 1 && vol > 100) { s -= 15; bd.push({ l: 'Liq/MCap Ratio', p: -15, c: 'var(--rd)', n: `${r.toFixed(1)}% — rug risk` }); }
+    if (r < 0.5) { s -= 30; bd.push({ l: 'Dangerously Low Liq/MCap', p: -30, c: 'var(--rd)', n: `${r.toFixed(2)}% — insiders can dump with almost no resistance` }); } else if (r < 1 && vol > 100) { s -= 15; bd.push({ l: 'Liq/MCap Ratio', p: -15, c: 'var(--rd)', n: `${r.toFixed(1)}% — rug risk` }); }
     else if (r < 3 && vol > 100) { s -= 8; bd.push({ l: 'Liq/MCap Ratio', p: -8, c: 'var(--yl)', n: `${r.toFixed(1)}% — thin` }); }
     else { bd.push({ l: 'Liq/MCap Ratio', p: 0, c: 'var(--gr)', n: `${r.toFixed(1)}% — ${r > 10 ? 'healthy' : 'ok'}` }); }
   } else { s -= 5; bd.push({ l: 'Liq/MCap Ratio', p: -5, c: 'var(--mu)', n: 'no data' }); }
@@ -572,7 +572,7 @@ function render() {
 
   const sym = dex?.symbol || ca.slice(0, 8);
   document.getElementById('tsym').textContent = `$${sym}`;
-  if (dex?.logo) { const i = document.getElementById('tlogo'); i.src = dex.logo; i.style.display = 'block'; }
+  const tl = document.getElementById('tlogo'); if (dex?.logo) { tl.src = dex.logo; tl.style.display = 'block'; } else { tl.src = ''; tl.style.display = 'none'; }
   if (dex?.dexPaid) document.getElementById('dexpaid').style.display = 'inline';
 
   const cmap = { solana: { l: 'SOL', c: 'sol' }, Ethereum: { l: 'ETH', c: 'eth' }, BSC: { l: 'BSC', c: 'bsc' }, Base: { l: 'BASE', c: 'base' }, Polygon: { l: 'MATIC', c: 'matic' }, Arbitrum: { l: 'ARB', c: 'arb' }, Avalanche: { l: 'AVAX', c: 'avax' }, Optimism: { l: 'OP', c: 'arb' } };
