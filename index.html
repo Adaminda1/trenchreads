@@ -735,7 +735,7 @@ function copyIt() {
   const allFlags = flags.map(fl => `${fl.ic} ${fl.t}\n   ${fl.d}`).join('\n\n');
   const holders = sec?.top10HolderPct ? `\ntop 10 holders: ${sec.top10HolderPct}% of supply` : '';
   const dev = sec?.creatorPct ? `\ndev wallet: ${sec.creatorPct}% of supply` : '';
-  const txt = `#TrenchReads — ${sym}\n\nRISK SCORE: ${sc.score}/100\nVERDICT: ${sc.verdict}\n\nFLAGS:\n${allFlags}\n\nMARKET:\nliquidity: $${f(dex?.liquidity || 0)}\nmcap: $${f(dex?.mcap || 0)}\n24h vol: $${f(dex?.volume24h || 0)}\nage: ${dex?.ageDays != null ? dex.ageDays + 'd' : '?'}${holders}${dev}\n\nCA: ${ca}\n\nchecked onchain not on vibes — TrenchReads`;
+  const txt = `#TrenchReads — ${sym}\n\nRISK SCORE: ${sc.score}/100\nVERDICT: ${sc.verdict}\n\nFLAGS:\n${allFlags}\n\nMARKET:\nliquidity: $${f(dex?.liquidity || 0)}\nmcap: $${f(dex?.mcap || 0)}\n24h liq/mcap: ${dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2)+"%" : "unknown"}\nvol: $${f(dex?.volume24h || 0)}\nage: ${dex?.ageDays != null ? dex.ageDays + 'd' : '?'}${holders}${dev}\n\nCA: ${ca}\n\nchecked onchain not on vibes — TrenchReads`;
   navigator.clipboard.writeText(txt).then(() => {
     const b = document.getElementById('cpb'); b.textContent = '✓ copied!'; b.classList.add('done');
     setTimeout(() => { b.textContent = '→ copy verdict'; b.classList.remove('done'); }, 2000);
