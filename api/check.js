@@ -101,7 +101,7 @@ blacklist: ${s?.isBlacklisted||'unknown'} transfer pausable: ${s?.transferPausab
 top10 holders: ${s?.top10HolderPct||'unknown'}%
 format: verdict: [safe/caution/avoid] | key flags: [list] | final call: [one sentence]
 checked onchain not on vibes - TrenchReads`;
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const groqCtrl = new AbortController(); setTimeout(() => groqCtrl.abort(), 5000); const r = await fetch(`https://api.groq.com/openai/v1/chat/completions`/openai/v1/chat/completions', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
       body:JSON.stringify({model:'llama3-8b-8192',messages:[{role:'user',content:prompt}],max_tokens:200})
@@ -113,8 +113,36 @@ checked onchain not on vibes - TrenchReads`;
     const chain = detectChain(address);
     const [d,s] = await Promise.all([dex(address),chain==='solana'?secSol(address):secEVM(address)]);
     const ai = await aiVerdict(d,s,chain);
-    res.status(200).json({dex:d,sec:s,chain,ai});
+    const score = d ? calculateScore({dex:d, sec:s}) : 0;
+res.status(200).json({dex:d,sec:s,chain,ai,score});
   } catch(e) {
     res.status(500).json({error:e.message});
   }
+}
+function calculateScore(d) {
+  let s = 100;
+  if (!d.dex) return 0;
+  const liq = d.dex.liquidity || 0;
+  const mcap = d.dex.mcap || 0;
+  if (liq === 0) s -= 40;
+  else if (liq < 1000) s -= 35;
+  else if (liq < 5000) s -= 28;
+  else if (liq < 20000) s -= 18;
+  else if (liq < 50000) s -= 8;
+  if (liq > 0 && mcap > 0) {
+    const r = (liq/mcap)*100;
+    if (r < 0.5) s -= 30;
+    else if (r < 1) s -= 15;
+    else if (r < 3) s -= 8;
+  }
+  if (d.sec?.honeypot === 'DETECTED') s -= 40;
+  if (d.sec?.mintAuth === 'RISK') s -= 20;
+  if (d.sec?.hiddenOwner === 'RISK') s -= 15;
+  if (d.sec?.isBlacklisted === 'RISK') s -= 15;
+  if (d.sec?.transferPausable === 'RISK') s -= 10;
+  if (d.sec?.canTakeBack === 'RISK') s -= 10;
+  if (d.dex.ageDays !== null && d.dex.ageDays < 1) s -= 15;
+  else if (d.dex.ageDays < 3) s -= 10;
+  else if (d.dex.ageDays < 7) s -= 5;
+  return Math.max(0, Math.min(100, s));
 }
