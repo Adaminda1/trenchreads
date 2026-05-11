@@ -1,4 +1,5 @@
-const TOKEN = '8789736110:AAFPeRmITdHMKp5CNCPcb__6RvGnul7qREs';
+require('dotenv').config();
+const TOKEN = process.env.TELEGRAM_TOKEN;
 const API = 'https://trenchreads.vercel.app/api/check';
 
 async function sendMsg(chatId, text) {
@@ -34,7 +35,7 @@ async function poll(offset = 0) {
         try {
           const d = await checkToken(address);
           if (!d.dex) return sendMsg(chatId, '❌ No data found for this address.');
-         const score = d.score ?? 0;
+         const score = d.score ?? 0; 
           const verdict = score >= 70 ? '🟢 RELATIVELY SAFE' : score >= 45 ? '🟡 PROCEED WITH CAUTION' : '🔴 HIGH RISK — AVOID';
           const liqMcap = d.dex.mcap > 0 ? ((d.dex.liquidity/d.dex.mcap)*100).toFixed(2) : 'n/a';
           const reply = `<b>#TrenchReads — $${d.dex.symbol}</b>\n\nRISK SCORE: ${score}/100\nVERDICT: ${verdict}\n\nMARKET:\nliquidity: $${f(d.dex.liquidity)}\nmcap: $${f(d.dex.mcap)}\nliq/mcap: ${liqMcap}%\nage: ${d.dex.ageDays}d\n\nSECURITY:\nhoneypot: ${d.sec?.honeypot||'n/a'}\nmint auth: ${d.sec?.mintAuth||'unknown'}\nhidden owner: ${d.sec?.hiddenOwner||'unknown'}\nblacklist: ${d.sec?.isBlacklisted||'unknown'}\n\nchecked onchain not on vibes — TrenchReads\ntrenchreads.vercel.app`;
