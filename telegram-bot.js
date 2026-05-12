@@ -1,4 +1,4 @@
-require('dotenv').config();
+import 'dotenv/config';
 const TOKEN = process.env.TELEGRAM_TOKEN;
 const API = 'https://trenchreads.vercel.app/api/check';
 
