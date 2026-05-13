@@ -101,7 +101,7 @@ blacklist: ${s?.isBlacklisted||'unknown'} transfer pausable: ${s?.transferPausab
 top10 holders: ${s?.top10HolderPct||'unknown'}%
 format: verdict: [safe/caution/avoid] | key flags: [list] | final call: [one sentence]
 checked onchain not on vibes - TrenchReads`;
-    const groqCtrl = new AbortController(); setTimeout(() => groqCtrl.abort(), 5000); const r = await fetch(`https://api.groq.com/openai/v1/chat/completions`/openai/v1/chat/completions', {
+    const groqCtrl = new AbortController(); setTimeout(() => groqCtrl.abort(), 5000); const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
       body:JSON.stringify({model:'llama3-8b-8192',messages:[{role:'user',content:prompt}],max_tokens:200})
