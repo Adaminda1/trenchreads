@@ -593,7 +593,7 @@ function render() {
   }
 
   // Flags
-  document.getElementById('flagsEl').innerHTML = flags.map(fl => `
+  document.getElementById('flagsEl').innerHTML = (flags || []).map(fl =>
     <div class="flag">
       <div class="fic">${fl.ic}</div>
       <div class="fb">
@@ -732,7 +732,7 @@ function shareX() {
 function copyIt() {
   const sym = document.getElementById('tsym').textContent;
   const { dex, sec, score: sc, flags, ca } = S;
-  const allFlags = flags.map(fl => `${fl.p < 0 ? '🔴' : '✅'} ${fl.t}\n  ${fl.d}`).join('\n\n');
+  const allFlags = (flags || []).map(fl => `${fl.p < 0 ? '🔴' : '✅'} ${fl.t}\n  ${fl.d}`).join('\n\n');
   const holders = sec?.top10HolderPct ? `\ntop 10 holders: ${sec.top10HolderPct}% of supply` : '';
   const dev = sec?.creatorPct ? `\ndev wallet: ${sec.creatorPct}% of supply` : '';
   const licRatio = dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2) : null;
