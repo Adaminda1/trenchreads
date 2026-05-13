@@ -119,9 +119,9 @@ res.status(200).json({dex:d,sec:s,chain,ai,score});
     res.status(500).json({error:e.message});
   }
 }
+
 function calculateScore(d) {
   let s = 100;
-  if (!d.dex) return 0;
   const liq = d.dex.liquidity || 0;
   const mcap = d.dex.mcap || 0;
   if (liq === 0) s -= 40;
