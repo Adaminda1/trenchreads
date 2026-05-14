@@ -358,7 +358,7 @@ async function run() {
     await sleep(200);
     stp(3, 'dn');
     stp(4, 'on');
-   S.score = data.score ?? 0;
+   S.score = r.score ?? 0;
     S.flags = buildFlags(S.dex, S.sec, S.score);
     await sleep(200);
     stp(4, 'dn');
