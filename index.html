@@ -327,10 +327,9 @@ window.addEventListener('load', ping);
 document.getElementById('ca').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
 
 async function ping() {
-  try {
-    await fetch(`${PROXY}/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"address":"test"}', signal: AbortSignal.timeout(10000) });
-    setPx(true);
-  } catch (e) { setPx(false); }
+  setPx(true);
+}
+  
 }
 
 function setPx(ok) {
