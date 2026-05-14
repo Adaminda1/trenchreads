@@ -359,7 +359,7 @@ async function run() {
     stp(3, 'dn');
     stp(4, 'on');
    S.score = r.score ?? 0;
-    S.flags = buildFlags(S.dex, S.sec, S.score);
+    const _sc = calcScore(S.dex, S.sec); S.flags = buildFlags(S.dex, S.sec, _sc);
     await sleep(200);
     stp(4, 'dn');
     render();
