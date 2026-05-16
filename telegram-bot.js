@@ -105,8 +105,8 @@ async function poll(offset = 0) {
       const text = msg.text.trim();
       if (text === '/start') {
         await sendMsg(chatId, '🔍 <b>TrenchReads Bot</b>\n\nchecked onchain, not on vibes\n\nSend any contract address or use /check &lt;CA&gt;');
-      } else if (text.startsWith('/check ') || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(text) || /^0x[a-fA-F0-9]{40}$/.test(text)) {
-        const address = text.replace('/check ', '').trim();
+      } else if (text.startsWith('/check ') || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(text.replace(/\s+/g,'')) || /^0x[a-fA-F0-9]{40}$/.test(text.replace(/\s+/g,''))) {
+        const address = text.replace('/check ', '').replace(/\s+/g, '').trim();
         await sendMsg(chatId, '🔍 scanning onchain...');
         try {
           const d = await checkToken(address);
