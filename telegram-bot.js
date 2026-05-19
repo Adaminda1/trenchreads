@@ -24,7 +24,9 @@ async function checkToken(address) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({address})
   });
-  return r.json();
+  const text = await r.text();
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('API returned: ' + text.slice(0, 100)); }
 }
 
 function buildMessage(d, address) {
@@ -95,8 +97,8 @@ CA: <code>${address}</code>
 🔗 trenchreads.vercel.app`;
 }
 
-async function poll(offset = -1) {
-  if (offset === -1) { const init = await (await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates?offset=-1`)).json(); offset = ((init.result||[]).pop()?.update_id ?? -1) + 1; } const r = await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates?offset=${offset}&timeout=30`);
+async function poll(offset = 0) {
+  const r = await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates?offset=${offset}&timeout=30`);
   const data = await r.json();
   for (const update of data.result || []) {
     const msg = update.message;
