@@ -121,9 +121,12 @@ res.status(200).json({dex:d,sec:s,chain,ai,score});
 }
 
 function calculateScore(d) {
+  const dex = d.dex || {};
+  const sec = d.sec || {};
   let s = 100;
-  const liq = d.dex.liquidity || 0;
-  const mcap = d.dex.mcap || 0;
+  const liq = dex.liquidity ?? 0, mcap = dex.mcap ?? 0;
+  const vol = dex.volume24h ?? 0, age = dex.ageDays;
+  const buys = dex.buys24h ?? 0, sells = dex.sells24h ?? 0;
   if (liq === 0) s -= 40;
   else if (liq < 1000) s -= 35;
   else if (liq < 5000) s -= 28;
