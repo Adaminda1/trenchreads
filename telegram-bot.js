@@ -95,8 +95,8 @@ CA: <code>${address}</code>
 🔗 trenchreads.vercel.app`;
 }
 
-async function poll(offset = 0) {
-  const r = await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates?offset=${offset}&timeout=30`);
+async function poll(offset = -1) {
+  if (offset === -1) { const init = await (await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates?offset=-1`)).json(); offset = ((init.result||[]).pop()?.update_id ?? -1) + 1; } const r = await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates?offset=${offset}&timeout=30`);
   const data = await r.json();
   for (const update of data.result || []) {
     const msg = update.message;
@@ -110,6 +110,7 @@ async function poll(offset = 0) {
         await sendMsg(chatId, '🔍 scanning onchain...');
         try {
           const d = await checkToken(address);
+          console.log('API response:', JSON.stringify(d).slice(0, 200));
           if (!d.dex) return sendMsg(chatId, '❌ No data found for this address.');
           await sendMsg(chatId, buildMessage(d, address));
         } catch(e) {
