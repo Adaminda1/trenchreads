@@ -144,7 +144,7 @@ function calculateScore(d) {
   if (d.dex.ageDays !== null && d.dex.ageDays < 1) s -= 15;
   else if (d.dex.ageDays < 3) s -= 10;
   else if (d.dex.ageDays < 7) s -= 5;
-  const missingCritical = (sec?.freezeAuth !== 'RISK' && sec?.freezeAuth !== 'safe') ||
+  const sec = d.sec || {}; const missingCritical = (sec?.freezeAuth !== 'RISK' && sec?.freezeAuth !== 'safe') ||
     (sec?.honeypot !== 'DETECTED' && sec?.honeypot !== 'none');
   let final = Math.max(0, Math.min(100, s));
   if (missingCritical && final > 85) final = 85;
