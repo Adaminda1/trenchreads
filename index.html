@@ -360,6 +360,10 @@ async function run() {
     stp(4, 'on');
    S.score = r.score ?? 0;
     S.sc = calcScore(S.dex, S.sec);
+    S.sc.score = r.score ?? S.sc.score;
+    if (S.sc.score >= 70) { S.sc.verdict = 'RELATIVELY SAFE'; S.sc.cls = 'safe'; }
+    else if (S.sc.score >= 45) { S.sc.verdict = 'PROCEED WITH CAUTION'; S.sc.cls = 'caution'; }
+    else { S.sc.verdict = 'HIGH RISK — AVOID'; S.sc.cls = 'danger'; }
     S.flags = buildFlags(S.dex, S.sec, S.sc);
     await sleep(200);
     stp(4, 'dn');
