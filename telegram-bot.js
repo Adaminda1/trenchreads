@@ -35,7 +35,9 @@ function buildMessage(d, address) {
   const score = d.score ?? 0;
 
   // Verdict — same thresholds as site
-  const verdict = score >= 70 ? '🟢 RELATIVELY SAFE'
+  const rugRatio = (dex.liquidity > 0 && dex.mcap > 0) ? (dex.liquidity / dex.mcap) * 100 : 999;
+  const criticalRug = rugRatio < 1;
+  const verdict = score >= 70 && !criticalRug ? "0001F7E2 RELATIVELY SAFE" : SCORE >= 70 && CRITICALRUG ? "0001F7E1 PROCEED WITH CAUTION — CRITICAL RUG EXIT RISK" : SCORE >= 45 ? "0001F7E1 PROCEED WITH CAUTION" : "0001F534 HIGH RISK — AVOID";
     : score >= 45 ? '🟡 PROCEED WITH CAUTION'
     : '🔴 HIGH RISK — AVOID';
 
