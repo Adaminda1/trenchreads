@@ -26,77 +26,76 @@ async function checkToken(address) {
   });
   const text = await r.text();
   try { return JSON.parse(text); }
-  catch(e) { throw new Error('API returned: ' + text.slice(0, 100)); }
+  catch(e) { throw new Error('API error: ' + text.slice(0, 100)); }
 }
 
 function buildMessage(d, address) {
   const dex = d.dex || {};
   const sec = d.sec || {};
   const score = d.score ?? 0;
-
-  // Verdict — same thresholds as site
-  const rugRatio = (dex.liquidity > 0 && dex.mcap > 0) ? (dex.liquidity / dex.mcap) * 100 : 999;
-  const criticalRug = rugRatio < 1;
-  const verdict = criticalRug && score >= 70 ? "[CAUTION] PROCEED WITH CAUTION - critical rug exit risk" : score >= 70 ? "[SAFE] RELATIVELY SAFE" : score >= 45 ? "[CAUTION] PROCEED WITH CAUTION" : "[DANGER] HIGH RISK - AVOID";
-    : score >= 45 ? '🟡 PROCEED WITH CAUTION'
-    : '🔴 HIGH RISK — AVOID';
-
-  // Rug Exit Risk — plain English like site
   const liq = dex.liquidity || 0;
   const mcap = dex.mcap || 0;
-  let rugLine = '';
-  if (liq > 0 && mcap > 0) {
-    const r = ((liq / mcap) * 100).toFixed(2);
-    if (r < 1) rugLine = `🔴 <b>Rug Exit Risk — CRITICAL (${r}%)</b>\nOnly ${r}% of mcap is liquid. Insiders can exit. You may not.`;
-    else if (r < 3) rugLine = `🟡 <b>Low Rug Buffer (${r}%)</b>\nThin cushion. Big wallet sells will move price hard against you.`;
-    else rugLine = `✅ Rug Exit Risk: ${r}% — ${r > 10 ? 'healthy' : 'acceptable'}`;
+
+  const rugRatio = (liq > 0 && mcap > 0) ? (liq / mcap) * 100 : 999;
+  const criticalRug = rugRatio < 1;
+
+  let verdictIcon, verdictText;
+  if (score >= 70 && !criticalRug) {
+    verdictIcon = 'GREEN';
+    verdictText = 'RELATIVELY SAFE';
+  } else if (score >= 70 && criticalRug) {
+    verdictIcon = 'YELLOW';
+    verdictText = 'PROCEED WITH CAUTION - critical rug exit risk';
+  } else if (score >= 45) {
+    verdictIcon = 'YELLOW';
+    verdictText = 'PROCEED WITH CAUTION';
+  } else {
+    verdictIcon = 'RED';
+    verdictText = 'HIGH RISK - AVOID';
   }
 
-  // Key security flags
+  const verdictEmoji = verdictIcon === 'GREEN' ? '\u{1F7E2}' : verdictIcon === 'RED' ? '\u{1F534}' : '\u{1F7E1}';
+
+  let rugLine = '';
+  if (liq > 0 && mcap > 0) {
+    const r = rugRatio.toFixed(2);
+    if (criticalRug) rugLine = '\n\u{1F534} <b>Rug Exit Risk - CRITICAL (' + r + '%)</b>\nOnly ' + r + '% of mcap is liquid. Insiders can exit. You may not.';
+    else if (rugRatio < 3) rugLine = '\n\u{1F7E1} Low Rug Buffer (' + r + '%) - thin cushion, watch whale wallets';
+    else rugLine = '\n\u{2705} Rug Exit Risk: ' + r + '% - ' + (rugRatio > 10 ? 'healthy' : 'acceptable');
+  }
+
   const flags = [];
-  if (sec.honeypot === 'DETECTED') flags.push('🔴 HONEYPOT — cannot sell');
-  if (sec.mintAuth === 'RISK') flags.push('🔴 Mint Authority active — dev can print tokens');
-  if (sec.freezeAuth === 'RISK') flags.push('🔴 Freeze Authority active — funds can be frozen');
-  if (sec.isBlacklisted === 'RISK') flags.push('🔴 Blacklist function detected');
-  if (sec.transferPausable === 'RISK') flags.push('🔴 Transfer can be paused');
-  if (sec.hiddenOwner === 'RISK') flags.push('🔴 Hidden owner detected');
-  if (sec.mintAuth === 'safe') flags.push('✅ Mint authority revoked');
-  if (sec.honeypot === 'none') flags.push('✅ No honeypot detected');
-  if (!flags.length) flags.push('⚠️ Limited security data available');
+  if (sec.honeypot === 'DETECTED') flags.push('\u{1F534} HONEYPOT - cannot sell');
+  if (sec.mintAuth === 'RISK') flags.push('\u{1F534} Mint Authority active - dev can print tokens');
+  if (sec.freezeAuth === 'RISK') flags.push('\u{1F534} Freeze Authority active');
+  if (sec.isBlacklisted === 'RISK') flags.push('\u{1F534} Blacklist function detected');
+  if (sec.transferPausable === 'RISK') flags.push('\u{1F534} Transfer can be paused');
+  if (sec.hiddenOwner === 'RISK') flags.push('\u{1F534} Hidden owner detected');
+  if (sec.mintAuth === 'safe') flags.push('\u{2705} Mint authority revoked');
+  if (sec.honeypot === 'none') flags.push('\u{2705} No honeypot detected');
+  if (!flags.length) flags.push('\u26A0\uFE0F Limited security data');
 
-  // Score cap notice
-  const capNotice = score === 85 && (
-    (sec.freezeAuth !== 'RISK' && sec.freezeAuth !== 'safe') ||
-    (sec.honeypot !== 'DETECTED' && sec.honeypot !== 'none')
-  ) ? '\n⚠️ <i>Score capped at 85 — freeze/honeypot unconfirmed</i>' : '';
+  const capNotice = (score === 85) ? '\n<i>Score capped at 85 - freeze/honeypot unconfirmed</i>' : '';
+  const age = dex.ageDays != null ? dex.ageDays + 'd' : dex.ageHours != null ? dex.ageHours + 'h' : '?';
+  const top10 = sec.top10HolderPct ? sec.top10HolderPct + '%' : 'n/a';
 
-  const age = dex.ageDays != null ? `${dex.ageDays}d` : dex.ageHours != null ? `${dex.ageHours}h` : '?';
-  const top10 = sec.top10HolderPct ? `${sec.top10HolderPct}%` : 'n/a';
-
-  return `<b>#TrenchReads — $${dex.symbol || address.slice(0,8)}</b>
-checked onchain, not on vibes
-
-<b>RISK SCORE: ${score}/100</b>
-${verdict}${capNotice}
-
-${rugLine}
-
-<b>FLAGS:</b>
-${flags.join('\n')}
-
-<b>MARKET:</b>
-💰 Liquidity: $${f(liq)}
-📊 MCap: $${f(mcap)}
-📈 24h Vol: $${f(dex.volume24h || 0)}
-🕐 Age: ${age}
-👥 Top 10 holders: ${top10}
-
-<b>CONTRACT:</b>
-Mint: ${sec.mintAuth || 'unknown'} | Freeze: ${sec.freezeAuth || 'unknown'}
-Honeypot: ${sec.honeypot || 'unknown'}
-
-CA: <code>${address}</code>
-🔗 trenchreads.vercel.app`;
+  return '<b>#TrenchReads - $' + (dex.symbol || address.slice(0,8)) + '</b>\n' +
+    'checked onchain, not on vibes\n\n' +
+    '<b>RISK SCORE: ' + score + '/100</b>\n' +
+    verdictEmoji + ' ' + verdictText + capNotice +
+    rugLine + '\n\n' +
+    '<b>FLAGS:</b>\n' + flags.join('\n') + '\n\n' +
+    '<b>MARKET:</b>\n' +
+    '\u{1F4B0} Liquidity: $' + f(liq) + '\n' +
+    '\u{1F4CA} MCap: $' + f(mcap) + '\n' +
+    '\u{1F4C8} 24h Vol: $' + f(dex.volume24h || 0) + '\n' +
+    '\u{1F550} Age: ' + age + '\n' +
+    '\u{1F465} Top 10 holders: ' + top10 + '\n\n' +
+    '<b>CONTRACT:</b>\n' +
+    'Mint: ' + (sec.mintAuth || 'unknown') + ' | Freeze: ' + (sec.freezeAuth || 'unknown') + '\n' +
+    'Honeypot: ' + (sec.honeypot || 'unknown') + '\n\n' +
+    'CA: <code>' + address + '</code>\n' +
+    'trenchreads.vercel.app';
 }
 
 async function poll(offset = 0) {
@@ -108,17 +107,19 @@ async function poll(offset = 0) {
       const chatId = msg.chat.id;
       const text = msg.text.trim();
       if (text === '/start') {
-        await sendMsg(chatId, '🔍 <b>TrenchReads Bot</b>\n\nchecked onchain, not on vibes\n\nSend any contract address or use /check &lt;CA&gt;');
-      } else if (text.startsWith('/check ') || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(text.replace(/\s+/g,'')) || /^0x[a-fA-F0-9]{40}$/.test(text.replace(/\s+/g,''))) {
-        const address = text.replace('/check ', '').replace(/\s+/g, '').trim();
-        await sendMsg(chatId, '🔍 scanning onchain...');
+        await sendMsg(chatId, '\u{1F50D} <b>TrenchReads Bot</b>\n\nchecked onchain, not on vibes\n\nSend any contract address to check it.');
+      } else if (text.startsWith('/check ') || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(text) || /^0x[a-fA-F0-9]{40}$/i.test(text)) {
+        const address = text.replace('/check ', '').trim();
+        await sendMsg(chatId, '\u{1F50D} scanning onchain...');
         try {
           const d = await checkToken(address);
-          console.log('API response:', JSON.stringify(d).slice(0, 200));
-          if (!d.dex) return sendMsg(chatId, '❌ No data found for this address.');
-          await sendMsg(chatId, buildMessage(d, address));
+          if (!d.dex) {
+            await sendMsg(chatId, '\u274C No data found for this address.');
+          } else {
+            await sendMsg(chatId, buildMessage(d, address));
+          }
         } catch(e) {
-          await sendMsg(chatId, '❌ Error: ' + e.message);
+          await sendMsg(chatId, '\u274C Error: ' + e.message);
         }
       }
     }
@@ -127,5 +128,15 @@ async function poll(offset = 0) {
   return poll(offset);
 }
 
+async function start() {
+  while (true) {
+    try { await poll(); }
+    catch(e) {
+      console.error('Bot crashed, restarting in 5s:', e.message);
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+}
+
 console.log('TrenchReads bot running...');
-poll();
+start();
