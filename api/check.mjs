@@ -40,6 +40,8 @@ async function checkSmartWallets(tokenAddress, chain) {
   }
 }
 
+import { setupDB, validateKey, checkFreeLimit } from './db.mjs';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -47,6 +49,28 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   const { address } = req.body || {};
   if (!address || address === 'test') return res.status(200).json({ status: 'ok' });
+
+  // Check tier
+  await setupDB();
+  const apiKey = req.headers['x-api-key'] || req.body?.apiKey;
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket?.remoteAddress || 'unknown';
+  
+  let isPaid = false;
+  if (apiKey) {
+    const keyData = await validateKey(apiKey);
+    isPaid = !!keyData;
+  }
+  
+  if (!isPaid) {
+    const limit = await checkFreeLimit(ip);
+    if (!limit.allowed) {
+      return res.status(429).json({ 
+        error: 'free_limit_reached',
+        message: 'You have used your 3 free checks today. Upgrade to TrenchReads Pro for unlimited access.',
+        upgradeUrl: 'https://trenchreads.vercel.app/#upgrade'
+      });
+    }
+  }
   function detectChain(a) {
     if (/^0x[a-fA-F0-9]{40}$/.test(a)) return 'evm';
     if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return 'solana';
