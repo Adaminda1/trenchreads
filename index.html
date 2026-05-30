@@ -232,6 +232,13 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     </div>
   </div>
 
+  <!-- SMART WALLETS -->
+  <div id="smartWalletBar" style="display:none;align-items:center;gap:8px;padding:8px 14px;background:rgba(153,69,255,.08);border:1px solid rgba(153,69,255,.2);margin-bottom:2px;font-size:10px;">
+    <span style="font-size:14px">👥</span>
+    <span id="swCount" style="color:#9945ff;font-weight:700"></span>
+    <span style="color:var(--mu);margin-left:auto">smart money signal</span>
+  </div>
+
   <!-- SOCIALS -->
   <div class="socials" id="socialsBar" style="display:none">
     <span class="soc-label">Links</span>
@@ -359,6 +366,7 @@ async function run() {
     stp(3, 'dn');
     stp(4, 'on');
    S.score = r.score ?? 0;
+    S.smartWallets = r.smartWallets ?? null;
     S.sc = calcScore(S.dex, S.sec);
     S.sc.score = r.score ?? S.sc.score;
     const _rugRatio = (S.dex?.liquidity > 0 && S.dex?.mcap > 0) ? (S.dex.liquidity / S.dex.mcap) * 100 : 999;
@@ -603,6 +611,16 @@ function render() {
   const ci = cmap[sec?.chain] || (ch === 'sol' ? { l: 'SOL', c: 'sol' } : { l: 'EVM', c: 'other' });
   const cbl = document.getElementById('cbl'); cbl.textContent = ci.l; cbl.className = `cbl ${ci.c}`;
   if (dex?.dex) document.getElementById('dxl').textContent = `via ${dex.dex}`;
+
+  // Smart Wallets
+  if (S.smartWallets && S.smartWallets.count > 0) {
+    const sw = S.smartWallets;
+    const swEl = document.getElementById('smartWalletBar');
+    if (swEl) {
+      swEl.style.display = 'flex';
+      document.getElementById('swCount').textContent = sw.count + ' known smart wallet' + (sw.count > 1 ? 's' : '') + ' bought this in the last 6h';
+    }
+  }
 
   // Socials
   const soc = dex?.socials;

@@ -94,6 +94,7 @@ function buildMessage(d, address) {
     '<b>CONTRACT:</b>\n' +
     'Mint: ' + (sec.mintAuth || 'unknown') + ' | Freeze: ' + (sec.freezeAuth || 'unknown') + '\n' +
     'Honeypot: ' + (sec.honeypot || 'unknown') + '\n\n' +
+    (d.smartWallets && d.smartWallets.count > 0 ? '\n\u{1F4B0} <b>Smart Wallet Signal: ' + d.smartWallets.count + ' known wallet' + (d.smartWallets.count > 1 ? 's' : '') + ' bought in last 6h</b>\n' : '') +
     'CA: <code>' + address + '</code>\n' +
     'trenchreads.vercel.app';
 }
