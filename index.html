@@ -200,7 +200,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <input type="text" id="apiKey" placeholder="paste pro key (tr_...)" 
     style="flex:1;background:#0f0f0f;border:1px solid #1e1e1e;color:#e5e5e5;
     font-family:'Space Mono',monospace;font-size:10px;padding:8px 12px;outline:none"/>
-  <button onclick="saveKey()" 
+  <button onclick="saveKey(); return false;" 
     style="background:transparent;border:1px solid #f97316;color:#f97316;
     padding:8px 14px;font-family:'Space Mono',monospace;font-size:9px;cursor:pointer">
     ACTIVATE
@@ -365,7 +365,7 @@ let S = {};
 let PRO_KEY = localStorage.getItem('tr_key') || '';
 if (PRO_KEY) document.getElementById('apiKey').value = PRO_KEY;
 
-function saveKey() {
+async function saveKey() {
   const k = document.getElementById('apiKey').value.trim();
   if (k.startsWith('tr_')) {
     PRO_KEY = k;
