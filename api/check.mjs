@@ -1,16 +1,9 @@
 
 // Known smart/profitable wallets to track
 const SMART_WALLETS = [
-  '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM',
-  'HVh6wHNBAsGbz5Xv47QCQ7XMFsYmG7AsUW3hbqxNJNVN',
-  'GJRs4FwHtemZ5ZE9x3kb4jfTtCSCAo5JvJfPKgGBMGJF',
-  'Ai2GcBGMNa7JXQS7KBNpQTvZBGJaFPyZdxEUmJHQVCBp',
-  '5tzFkiKscXHK5ZXCGbCsvg6xM5tMbNLPXMHQLqhRMGeC',
-  'BpE2NQWLFkEgHNBzjEp7EYzZHGXPMXLVJFdVkfpE8QaX',
-  'CKs1E69a2e9TmH9tMEDFxCEpAqxLPnHwGcHJdBbmT5Kz',
-  'DYw8jCTfwHNrXkpFSGCEVqBFxCHqJzPtPzQMWXRKJNMP',
-  'EF7hVJkLpNsXqRtMbWcGdYzKpFvHxCjNqTsLmBwRKPvA',
-  'FGz9mKpLqWxNvRtJbSdHyZcBfMjXpNqVsLtKwCmRJPxE'
+  '5H8phzFu9jTEmcDj2MDeyHcyvMmRY1UwPonqKbFNiiNG',
+  'GengvgZJ9gwFBmuXsmTFroX66xdXJH7T5nrU9yboVeXi',
+  'GhA8SoXSYieW9pdiftRdbf1LF1HZpApMDUgPzVKrySWe'
 ];
 
 async function checkSmartWallets(tokenAddress, chain) {
