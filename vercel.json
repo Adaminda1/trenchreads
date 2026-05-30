@@ -1,7 +1,17 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/api/check", "dest": "/api/check.js" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    {
+      "src": "/api/check",
+      "dest": "/api/check.mjs"
+    },
+    {
+      "src": "/api/activate",
+      "dest": "/api/activate.mjs"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
   ]
 }
