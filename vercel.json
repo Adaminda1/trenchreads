@@ -1,8 +1,5 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "/api/check", "dest": "/api/check.js" },
-    { "src": "/api/activate", "dest": "/api/activate.js" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
