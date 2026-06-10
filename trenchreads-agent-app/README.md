@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TrenchReads Agent 🔍
 
-## Getting Started
+Onchain token risk analysis powered by Azure AI Foundry (Reasoning Agents track — Microsoft Agents League Hackathon 2026)
 
-First, run the development server:
+## What it does
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+TrenchReads Agent is a multi-step reasoning agent that analyzes any token contract address for risk. It reasons through 5 steps before delivering a verdict:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Step 1 — Contract Analysis:** Checks for dangerous functions (mint, blacklist, pause, proxy)
+- **Step 2 — Liquidity Check:** Assesses liquidity depth and lock status via DexScreener
+- **Step 3 — Holder Analysis:** Checks top holder concentration and team wallet holdings
+- **Step 4 — Trading Pattern:** Detects honeypot signals and abnormal buy/sell tax
+- **Step 5 — Final Verdict:** Scores token 0-100 with SAFE / CAUTION / DANGER verdict
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Azure AI Foundry** — Agent orchestration and reasoning (Foundry IQ)
+- **GPT-4.1-mini** — Reasoning model
+- **DexScreener API** — Liquidity and trading data
+- **GoPlus Security API** — Contract security analysis
+- **Next.js + Tailwind CSS** — Frontend
+- **Vercel** — Deployment
 
-## Learn More
+## Microsoft IQ Integration
 
-To learn more about Next.js, take a look at the following resources:
+This project uses **Foundry IQ** as the core intelligence layer for multi-step agent reasoning.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Demo
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Agent correctly identifies:
+- USDT (0xdac17f...) → Risk Score 95/100 — SAFE
+- Unknown tokens → DANGER verdict with reasoning
 
-## Deploy on Vercel
+## Setup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Clone the repo
+2. Create `.env.local` with your Azure credentials
+3. Run `npm install && npm run dev`
