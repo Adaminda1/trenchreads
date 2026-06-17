@@ -444,7 +444,7 @@ async function callProxy(ca) {
     return j;
   } catch (e) {
     clearTimeout(t);
-    throw new Error('proxy not responding. run: node rugcheck-proxy.cjs');
+    throw new Error('check failed. try again.');
   }
 }
 
