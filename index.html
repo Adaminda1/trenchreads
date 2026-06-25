@@ -1,672 +1,769 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TrenchReads — Onchain Rugchecker</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TrenchReads — Solana Token Risk Scanner</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
-:root {
-  --bg:#080808; --s1:#0f0f0f; --bd:#1e1e1e;
-  --or:#f97316; --gr:#22c55e; --rd:#ef4444; --yl:#eab308;
-  --bl:#3b82f6; --pu:#9945ff; --tx:#e5e5e5; --mu:#555;
-  --mono:'Space Mono',monospace; --sans:'Syne',sans-serif;
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0c10;--sur:#111318;--sur2:#181c24;--bor:#1f2530;
+  --ac:#14f195;--ac2:#9945ff;--warn:#f7b731;--dan:#e84040;
+  --text:#e2e8f0;--mu:#64748b;--mono:'Courier New',monospace;
 }
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--tx);font-family:var(--mono);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px 60px}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 15%,rgba(249,115,22,.05) 0%,transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(239,68,68,.03) 0%,transparent 55%);pointer-events:none;z-index:0}
-.wrap{width:100%;max-width:700px;position:relative;z-index:1}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.6;min-height:100vh}
+a{color:var(--ac);text-decoration:none}a:hover{text-decoration:underline}
 
-/* HEADER */
-.hdr{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--bd)}
-.logo{width:40px;height:40px;border:2px solid var(--or);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-weight:800;font-size:12px;color:var(--or)}
-.brand{font-family:var(--sans);font-weight:800;font-size:20px;letter-spacing:-.5px}
-.brand em{color:var(--or);font-style:normal}
-.brand-sub{font-size:9px;color:var(--mu);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
-.live{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:9px;color:var(--gr);letter-spacing:1px}
-.live::before{content:'';width:5px;height:5px;background:var(--gr);border-radius:50%;animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* PROXY */
-.pbar{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--mu);margin-bottom:10px;padding:7px 12px;background:var(--s1);border:1px solid var(--bd)}
-.pd{width:6px;height:6px;border-radius:50%}.pd.ok{background:var(--gr)}.pd.fail{background:var(--rd)}.pd.chk{background:var(--yl);animation:blink 1s infinite}
-
-/* INPUT */
-.ibox{display:flex;border:1px solid var(--bd);background:var(--s1);margin-bottom:5px;transition:border-color .2s}
-.ibox:focus-within{border-color:var(--or)}
-.ipx{padding:13px 14px;color:var(--or);font-size:11px;border-right:1px solid var(--bd);flex-shrink:0}
-#ca{flex:1;background:transparent;border:none;outline:none;color:var(--tx);font-family:var(--mono);font-size:11px;padding:13px 12px}
-#ca::placeholder{color:var(--mu)}
-.go{background:var(--or);color:#000;border:none;padding:0 22px;font-family:var(--sans);font-weight:800;font-size:12px;cursor:pointer;transition:opacity .2s}
-.go:hover{opacity:.85}.go:disabled{opacity:.35;cursor:not-allowed}
-.chains{font-size:9px;color:var(--mu);margin-bottom:20px}
-.chains span{color:var(--or);margin:0 2px}
-
-/* ERROR */
-.eb{display:none;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);padding:10px 14px;font-size:10px;color:var(--rd);margin-bottom:12px}
-.eb.show{display:block}
-
-/* LOADING */
-.load{display:none;padding:40px 0;text-align:center}.load.show{display:block}
-.sl{font-size:10px;color:var(--or);letter-spacing:2px;text-transform:uppercase;animation:pulse 1.2s infinite}
+/* ── Proxy bar ── */
+#pb{background:#0d1117;border-bottom:1px solid var(--bor);padding:6px 16px;font-size:11px;color:var(--mu);display:flex;align-items:center;gap:8px}
+.pdot{width:7px;height:7px;border-radius:50%;background:var(--ac);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.ss{margin-top:16px}
-.ss-i{font-size:10px;color:#2a2a2a;padding:4px 0;transition:color .3s}
-.ss-i.on{color:var(--tx)}.ss-i.on::before{content:'→ ';color:var(--or)}
-.ss-i.dn{color:var(--gr)}.ss-i.dn::before{content:'✓ '}
 
-/* RESULT */
-.res{display:none;animation:fu .4s ease}.res.show{display:block}
-@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* ── Header ── */
+header{padding:24px 20px 12px;text-align:center;border-bottom:1px solid var(--bor)}
+header h1{font-size:22px;font-weight:700;color:#fff}
+header h1 span{color:var(--ac)}
+header p{margin-top:4px;font-size:12px;color:var(--mu)}
 
-/* VERDICT CARD */
-.vc{padding:20px;margin-bottom:2px;display:flex;align-items:center;gap:18px;border-left:4px solid}
-.vc.safe{background:rgba(34,197,94,.07);border-color:var(--gr)}
-.vc.caution{background:rgba(234,179,8,.07);border-color:var(--yl)}
-.vc.danger{background:rgba(239,68,68,.07);border-color:var(--rd)}
-.vring{width:72px;height:72px;border-radius:50%;border:3px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
-.vc.safe .vring{border-color:var(--gr)}.vc.caution .vring{border-color:var(--yl)}.vc.danger .vring{border-color:var(--rd)}
-.vnum{font-family:var(--sans);font-weight:800;font-size:26px;line-height:1}
-.vc.safe .vnum{color:var(--gr)}.vc.caution .vnum{color:var(--yl)}.vc.danger .vnum{color:var(--rd)}
-.vdenom{font-size:8px;color:var(--mu);margin-top:1px}
-.vi{flex:1}
-.vt{font-family:var(--sans);font-weight:800;font-size:20px;letter-spacing:-.5px}
-.vc.safe .vt{color:var(--gr)}.vc.caution .vt{color:var(--yl)}.vc.danger .vt{color:var(--rd)}
-.vs{font-size:10px;color:var(--mu);margin-top:4px}
-.tk{display:flex;align-items:center;gap:7px;margin-top:8px;flex-wrap:wrap}
-#tlogo{width:22px;height:22px;border-radius:50%;display:none;border:1px solid var(--bd)}
-#tsym{font-family:var(--sans);font-weight:700;font-size:14px}
-.cbl{font-size:8px;padding:2px 6px;border-radius:2px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-.cbl.sol{background:rgba(153,69,255,.15);color:var(--pu)}
-.cbl.eth{background:rgba(59,130,246,.15);color:var(--bl)}
-.cbl.bsc{background:rgba(234,179,8,.15);color:var(--yl)}
-.cbl.base{background:rgba(99,102,241,.15);color:#6366f1}
-.cbl.matic{background:rgba(139,92,246,.15);color:#8b5cf6}
-.cbl.arb{background:rgba(96,165,250,.15);color:#60a5fa}
-.cbl.avax{background:rgba(239,68,68,.15);color:var(--rd)}
-.cbl.other{background:rgba(255,255,255,.04);color:var(--mu)}
-.dex-paid{font-size:8px;padding:2px 6px;background:rgba(249,115,22,.15);color:var(--or);border-radius:2px;font-weight:700;letter-spacing:1px}
+/* ── Input box ── */
+.wrap{max-width:680px;margin:0 auto;padding:0 16px}
+#ib{margin-top:22px}
+#ib label{display:block;font-size:11px;font-weight:600;letter-spacing:.8px;color:var(--mu);text-transform:uppercase;margin-bottom:8px}
+#ir{display:flex;gap:8px}
+#ca{flex:1;background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:10px 14px;font-size:13px;font-family:var(--mono);color:var(--text);outline:none;transition:border-color .2s}
+#ca:focus{border-color:var(--ac)}
+#ca::placeholder{color:var(--mu)}
+#sb{background:var(--ac);color:#000;border:none;border-radius:6px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s;white-space:nowrap}
+#sb:hover{opacity:.88}#sb:disabled{opacity:.4;cursor:not-allowed}
 
-/* SOCIALS */
-.socials{display:flex;gap:8px;padding:10px 16px;background:var(--s1);border:1px solid var(--bd);margin-bottom:2px;flex-wrap:wrap;align-items:center}
-.soc-label{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-right:4px}
-.soc-link{font-size:9px;padding:3px 10px;border:1px solid var(--bd);color:var(--mu);text-decoration:none;border-radius:2px;transition:all .2s;letter-spacing:.5px}
-.soc-link:hover{border-color:var(--or);color:var(--or)}
-.soc-link.x{border-color:#1d9bf033;color:#1d9bf0}
-.soc-link.x:hover{background:rgba(29,155,240,.08)}
-.soc-link.tg{border-color:#2292cc33;color:#2292cc}
-.soc-link.tg:hover{background:rgba(34,146,204,.08)}
-.soc-link.web{border-color:var(--bd)}
-.chart-link{font-size:9px;padding:3px 10px;border:1px solid rgba(249,115,22,.3);color:var(--or);text-decoration:none;border-radius:2px;transition:all .2s}
-.chart-link:hover{background:rgba(249,115,22,.08)}
+/* ── Key bar ── */
+#kb{display:flex;gap:8px;margin-top:10px}
+#ak{flex:1;background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:8px 12px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;transition:border-color .2s}
+#ak:focus{border-color:var(--ac2)}
+#ak::placeholder{color:var(--mu)}
+#ab{background:var(--sur2);color:var(--ac2);border:1px solid var(--ac2);border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
+#ab:hover{background:rgba(153,69,255,.15)}
+#ks{font-size:11px;color:var(--mu);margin-top:5px}
+#ks.ok{color:var(--ac)}#ks.err{color:var(--dan)}
 
-/* SECTION */
-.sec{margin-bottom:2px}
-.sh{font-size:9px;color:var(--or);letter-spacing:2px;text-transform:uppercase;padding:8px 16px;background:var(--s1);border:1px solid var(--bd);border-bottom:none;display:flex;align-items:center;gap:8px}
-.sh::after{content:'';flex:1;height:1px;background:var(--bd)}
+/* ── Upgrade bar ── */
+#ub{margin-top:14px}
+#ut{background:linear-gradient(90deg,rgba(153,69,255,.12),rgba(20,241,149,.08));border:1px solid rgba(153,69,255,.35);border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .2s}
+#ut:hover{border-color:rgba(153,69,255,.6)}
+#ut.open{border-radius:8px 8px 0 0}
+.ul{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--text)}
+.ubadge{background:var(--ac2);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.5px}
+.uprice{font-size:13px;color:var(--ac);font-weight:700}
+.uchev{font-size:10px;color:var(--mu);margin-left:8px;transition:transform .25s}
+#ut.open .uchev{transform:rotate(180deg)}
 
-/* FLAGS */
-.flags{background:var(--s1);border:1px solid var(--bd)}
-.flag{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bd)}
-.flag:last-child{border-bottom:none}
-.fic{font-size:15px;flex-shrink:0;margin-top:1px;width:18px}
-.fb{flex:1}
-.ft{font-size:11px;font-weight:700;margin-bottom:2px}
-.ft.rd{color:var(--rd)}.ft.yl{color:var(--yl)}.ft.gr{color:var(--gr)}.ft.mu{color:var(--mu)}
-.fd{font-size:10px;color:var(--mu);line-height:1.5}
+/* ── Pay panel ── */
+#pp{display:none;background:var(--sur);border:1px solid rgba(153,69,255,.3);border-top:none;border-radius:0 0 8px 8px;padding:18px 18px 20px}
+#pp.vis{display:block}
+#pp h3{font-size:13px;font-weight:700;color:#fff;margin-bottom:4px}
+.psub{font-size:11px;color:var(--mu);margin-bottom:16px}
+#wr{background:var(--sur2);border:1px solid var(--bor);border-radius:6px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wlbl{font-size:10px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.waddr{font-family:var(--mono);font-size:11px;color:var(--ac);word-break:break-all}
+#cwb{flex-shrink:0;background:var(--sur);border:1px solid var(--bor);border-radius:5px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--text);cursor:pointer;transition:border-color .2s;white-space:nowrap}
+#cwb:hover{border-color:var(--ac);color:var(--ac)}#cwb.copied{border-color:var(--ac);color:var(--ac)}
+#an{font-size:11px;color:var(--mu);margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.amt{background:rgba(20,241,149,.1);border:1px solid rgba(20,241,149,.25);border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;color:var(--ac)}
+.pf{margin-bottom:12px}
+.pf label{display:block;font-size:10px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.pf input{width:100%;background:var(--sur2);border:1px solid var(--bor);border-radius:6px;padding:9px 12px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;transition:border-color .2s}
+.pf input:focus{border-color:var(--ac2)}
+.pf input::placeholder{color:var(--mu);font-family:inherit}
+#vb{width:100%;background:var(--ac2);color:#fff;border:none;border-radius:6px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;transition:opacity .2s}
+#vb:hover{opacity:.88}#vb:disabled{opacity:.4;cursor:not-allowed}
+#ps{margin-top:10px;font-size:12px;text-align:center;min-height:18px;color:var(--mu)}
+#ps.ok{color:var(--ac)}#ps.err{color:var(--dan)}
+#kd{display:none;margin-top:14px;background:rgba(20,241,149,.06);border:1px solid rgba(20,241,149,.25);border-radius:6px;padding:12px 14px}
+#kd.vis{display:block}
+.kdl{font-size:10px;font-weight:700;color:var(--ac);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+#dk{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--sur2);border:1px solid var(--bor);border-radius:5px;padding:8px 10px;word-break:break-all;margin-bottom:8px}
+#ckb{background:var(--ac);color:#000;border:none;border-radius:5px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s}
+#ckb:hover{opacity:.85}
+.ph{margin-top:12px;font-size:11px;color:var(--mu);line-height:1.7}
+.ph a{font-size:11px}
 
-/* DATA GRID */
-.dg{background:var(--s1);border:1px solid var(--bd)}
-.dr{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--bd);gap:10px}
-.dr:last-child{border-bottom:none}
-.dk{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;width:120px;flex-shrink:0}
-.dv{font-size:11px;color:var(--tx);flex:1}
-.df{margin-left:auto;flex-shrink:0}
+/* ── Error banner ── */
+#eb{margin-top:12px;display:none}
+.ei{background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.3);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--dan)}
 
-/* HOLDERS */
-.holders{background:var(--s1);border:1px solid var(--bd)}
-.holder-row{display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid var(--bd);gap:10px}
-.holder-row:last-child{border-bottom:none}
-.h-rank{font-size:9px;color:var(--mu);width:20px;flex-shrink:0}
-.h-addr{font-size:10px;color:var(--tx);flex:1;font-family:var(--mono)}
-.h-tag{font-size:8px;padding:1px 6px;border-radius:2px;margin-left:4px}
-.h-tag.dev{background:rgba(239,68,68,.15);color:var(--rd)}
-.h-tag.lp{background:rgba(59,130,246,.15);color:var(--bl)}
-.h-tag.whale{background:rgba(234,179,8,.15);color:var(--yl)}
-.h-pct{font-size:10px;font-weight:700;width:50px;text-align:right;flex-shrink:0}
-.h-bar-wrap{width:80px;height:3px;background:var(--bd);border-radius:2px;flex-shrink:0}
-.h-bar{height:100%;border-radius:2px}
+/* ── Loading ── */
+#ls{margin-top:16px;display:none}
+.step{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:12px;color:var(--mu);border-bottom:1px solid var(--bor)}
+.step:last-child{border-bottom:none}
+.step .sd{width:8px;height:8px;border-radius:50%;background:var(--bor);flex-shrink:0;transition:background .3s}
+.step.active .sd{background:var(--warn);animation:pulse 1s infinite}
+.step.done .sd{background:var(--ac);animation:none}
+.step.active{color:var(--text)}.step.done{color:var(--ac)}
 
-/* CONCENTRATION METER */
-.conc{padding:12px 16px;background:var(--s1);border:1px solid var(--bd);border-top:none}
-.conc-label{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
-.conc-bar-bg{height:6px;background:var(--bd);border-radius:3px;overflow:hidden;margin-bottom:4px}
-.conc-bar-fill{height:100%;border-radius:3px;transition:width 1s ease}
-.conc-stats{display:flex;justify-content:space-between;font-size:9px;color:var(--mu)}
+/* ── Results ── */
+#res{margin:20px auto 40px;max-width:680px;padding:0 16px;display:none}
 
-/* SCORE BREAKDOWN */
-.bd{background:var(--s1);border:1px solid var(--bd)}
-.bi{padding:9px 16px;border-bottom:1px solid var(--bd)}
-.bi:last-child{border-bottom:none}
-.bi-top{display:flex;align-items:center;gap:10px;margin-bottom:3px}
-.bi-l{font-size:9px;color:var(--mu);width:150px;flex-shrink:0}
-.bi-bw{flex:1;height:3px;background:var(--bd);border-radius:2px;overflow:hidden}
-.bi-b{height:100%;border-radius:2px;transition:width .8s ease}
-.bi-p{font-size:9px;width:40px;text-align:right;flex-shrink:0}
-.bi-n{font-size:9px;color:var(--mu);padding-left:160px}
+/* Verdict */
+#vc{border-radius:10px;border:1px solid var(--bor);overflow:hidden;margin-bottom:16px}
+#vc.safe #vh{background:rgba(20,241,149,.08);border-bottom:1px solid rgba(20,241,149,.2)}
+#vc.warn #vh{background:rgba(247,183,49,.08);border-bottom:1px solid rgba(247,183,49,.25)}
+#vc.danger #vh{background:rgba(232,64,64,.08);border-bottom:1px solid rgba(232,64,64,.25)}
+#vh{padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+#vc.safe #vnum{color:var(--ac)}#vc.warn #vnum{color:var(--warn)}#vc.danger #vnum{color:var(--dan)}
+#vnum{font-size:18px;font-weight:800;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#vc.safe  #vnum{background:rgba(20,241,149,.15);border:2px solid var(--ac)}
+#vc.warn  #vnum{background:rgba(247,183,49,.15);border:2px solid var(--warn)}
+#vc.danger #vnum{background:rgba(232,64,64,.15);border:2px solid var(--dan)}
+#vt{font-size:15px;font-weight:700;color:#fff}
+#vtsym{font-size:12px;color:var(--mu);margin-left:4px}
+#vvt{font-size:13px;font-weight:700;margin-top:2px}
+#vc.safe  #vvt{color:var(--ac)}#vc.warn  #vvt{color:var(--warn)}#vc.danger #vvt{color:var(--dan)}
+#vs{font-size:11px;color:var(--mu);margin-top:2px}
+#vb2{padding:14px 18px;background:var(--sur)}
 
-/* BADGES */
-.b{font-size:9px;padding:2px 7px;border-radius:2px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;border:1px solid}
-.b.s{background:rgba(34,197,94,.1);color:var(--gr);border-color:rgba(34,197,94,.2)}
-.b.w{background:rgba(234,179,8,.1);color:var(--yl);border-color:rgba(234,179,8,.2)}
-.b.d{background:rgba(239,68,68,.1);color:var(--rd);border-color:rgba(239,68,68,.2)}
-.b.n{background:rgba(255,255,255,.03);color:var(--mu);border-color:var(--bd)}
+/* Chain badge */
+#cbl{display:inline-flex;align-items:center;gap:5px;background:var(--sur2);border:1px solid var(--bor);border-radius:5px;padding:3px 9px;font-size:11px;font-weight:600;color:var(--text);margin-bottom:10px}
 
-/* ACTIONS */
-.acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
-.ab{background:transparent;border:1px solid var(--bd);color:var(--mu);padding:11px;font-family:var(--mono);font-size:9px;cursor:pointer;transition:all .2s;letter-spacing:1px;text-transform:uppercase;text-align:center}
-.ab:hover{border-color:var(--or);color:var(--or)}
-.ab.xb{border-color:#1d9bf0;color:#1d9bf0}.ab.xb:hover{background:rgba(29,155,240,.07)}
-.ab.done{border-color:var(--gr);color:var(--gr)}
-.rb{width:100%;margin-top:6px;background:transparent;border:1px solid var(--bd);color:var(--mu);padding:10px;font-family:var(--mono);font-size:9px;cursor:pointer;transition:all .2s;letter-spacing:1px;text-transform:uppercase}
-.rb:hover{border-color:var(--or);color:var(--or)}
-.rf{display:flex;justify-content:space-between;padding:9px 16px;background:var(--s1);border:1px solid var(--bd);margin-top:2px;font-size:9px;color:var(--mu)}
-.disc{margin-top:32px;font-size:9px;color:#252525;text-align:center;line-height:2}
+/* Smart wallet bar */
+#swb{display:none;background:rgba(20,241,149,.06);border:1px solid rgba(20,241,149,.2);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--text);margin-bottom:10px}
+
+/* Socials bar */
+#socialsBar{display:none;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+#lkX,#lkTg,#lkWeb,#lkChart{display:none;background:var(--sur2);border:1px solid var(--bor);border-radius:5px;padding:5px 10px;font-size:11px;color:var(--mu);transition:border-color .2s}
+#lkX:hover,#lkTg:hover,#lkWeb:hover,#lkChart:hover{border-color:var(--ac);color:var(--ac);text-decoration:none}
+
+/* Flags */
+#flagsEl{display:flex;flex-direction:column;gap:6px}
+.flag{display:flex;align-items:flex-start;gap:10px;background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:9px 12px;font-size:12px}
+.fic{font-size:14px;flex-shrink:0;margin-top:1px}
+.fb .ft{font-size:11px;font-weight:700}
+.fb .fd{font-size:11px;color:var(--mu);margin-top:2px}
+.flag.rd .ft{color:var(--dan)}.flag.yl .ft{color:var(--warn)}.flag.gr .ft{color:var(--ac)}.flag.mu .ft{color:var(--mu)}
+.flag.rd{border-left:3px solid var(--dan)}.flag.yl{border-left:3px solid var(--warn)}.flag.gr{border-left:3px solid var(--ac)}
+
+/* Section label */
+.sl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mu);margin:20px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bor)}
+
+/* Market */
+.mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:4px}
+.mc{background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:10px 12px}
+.mc .mn{font-size:10px;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.mc .mv{font-size:14px;font-weight:700;color:#fff}
+.mc .mv.s{color:var(--ac)}.mc .mv.w{color:var(--warn)}.mc .mv.d{color:var(--dan)}
+
+/* buy/sell strip */
+#mBS{font-size:11px;color:var(--mu);margin-top:4px}
+
+/* Holder section */
+#holderSec{display:none}
+#concBar{height:6px;background:var(--bor);border-radius:3px;margin-bottom:6px;overflow:hidden}
+#concBar div{height:100%;border-radius:3px;background:var(--ac)}
+#concPct{font-size:11px;color:var(--mu);margin-bottom:4px}
+#concVerdict{font-size:12px;font-weight:600;margin-bottom:10px}
+#holdersEl .holder-row{display:grid;grid-template-columns:28px 1fr 60px 50px;align-items:center;gap:8px;font-size:11px;padding:5px 0;border-bottom:1px solid var(--bor)}
+#holdersEl .holder-row:last-child{border-bottom:none}
+.h-rank{color:var(--mu);font-weight:600}
+.h-addr{font-family:var(--mono);color:var(--mu)}
+.h-bar-wrap{height:4px;background:var(--bor);border-radius:2px}
+.h-bar{height:100%;border-radius:2px;background:var(--ac)}
+.h-pct{font-size:11px;font-weight:700;text-align:right}
+.h-tag{font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:3px}
+.h-tag.dev{background:rgba(232,64,64,.2);color:var(--dan)}
+.h-tag.lp{background:rgba(20,241,149,.15);color:var(--ac)}
+.h-tag.whale{background:rgba(247,183,49,.15);color:var(--warn)}
+
+/* Contract security */
+#secEl .sec-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bor);font-size:12px}
+#secEl .sec-row:last-child{border-bottom:none}
+.sr-l{color:var(--mu)}
+.bh{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.bh.s{background:rgba(20,241,149,.12);color:var(--ac)}
+.bh.w{background:rgba(247,183,49,.1);color:var(--warn)}
+.bh.d{background:rgba(232,64,64,.1);color:var(--dan)}
+.bh.n{background:var(--sur2);color:var(--mu)}
+
+/* Tax rows */
+#rBuyTax,#rSellTax,#rHidden,#rBlacklist,#rPause,#rPProxy,#rOpen{display:none}
+#fBuyTax,#fSellTax{display:inline}
+
+/* Score breakdown */
+#bdEl{display:flex;flex-direction:column;gap:6px}
+.bi{display:flex;align-items:center;gap:10px}
+.bi-top{display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px}
+.bi-l{color:var(--mu);font-size:11px}
+.bi-bw{flex:1;height:6px;background:var(--bor);border-radius:3px;overflow:hidden}
+.bi-b{height:100%;border-radius:3px;transition:width .5s ease}
+.bi-p{font-size:11px;font-weight:700;width:36px;text-align:right;flex-shrink:0}
+.bi-n{font-size:10px;color:var(--mu);width:36px;text-align:right;flex-shrink:0}
+
+/* Actions */
+#actRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.abt{background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:border-color .2s,color .2s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.abt:hover{border-color:var(--ac);color:var(--ac);text-decoration:none}
+#cpb{background:var(--sur2)}
+#ft{font-size:10px;color:var(--mu);margin-top:8px}
+
+/* Footer */
+footer{text-align:center;padding:20px 16px 32px;font-size:11px;color:var(--mu);border-top:1px solid var(--bor)}
+footer a{font-size:11px}
+
+/* Responsive */
+@media(max-width:520px){
+  #ir,#kb{flex-direction:column}
+  #sb,#ab{width:100%}
+  .mg{grid-template-columns:repeat(2,1fr)}
+  #holdersEl .holder-row{grid-template-columns:24px 1fr 48px}
+  .h-bar-wrap{display:none}
+}
 </style>
 </head>
 <body>
+
+<!-- Proxy bar -->
+<div id="pb">
+  <span class="pdot"></span>
+  <span id="pst">Connecting…</span>
+</div>
+
+<!-- Header -->
+<header>
+  <h1>Trench<span>Reads</span></h1>
+  <p>Solana token risk scanner — checked onchain, not on vibes</p>
+</header>
+
+<!-- Input box -->
+<div class="wrap" id="ib">
+  <label for="ca">Token Contract Address</label>
+  <div id="ir">
+    <input id="ca" type="text" placeholder="Paste Solana token address…" autocomplete="off" spellcheck="false"/>
+    <button id="sb" onclick="run()">Scan</button>
+  </div>
+</div>
+
+<!-- Key bar -->
 <div class="wrap">
-
-<div class="hdr">
-  <div class="logo">TR</div>
-  <div>
-    <div class="brand">#<em>TrenchReads</em></div>
-    <div class="brand-sub">Onchain Rugchecker</div>
+  <div id="kb">
+    <input id="ak" type="text" placeholder="Pro key (tr_…) — paste to unlock unlimited scans" autocomplete="off" spellcheck="false"/>
+    <button id="ab" onclick="saveKey()">ACTIVATE</button>
   </div>
-  <div class="live">LIVE</div>
+  <div id="ks"></div>
 </div>
 
-<div class="pbar" id="pbar">
-  <div class="pd chk" id="pd"></div>
-  <span id="pm">connecting to data proxy...</span>
-</div>
-
-<div class="ibox">
-  <div class="ipx">CA</div>
-  <input type="text" id="ca" placeholder="paste contract address — sol, eth, bsc, base, polygon, arb, avax..." autocomplete="off" spellcheck="false"/>
-  <button class="go" id="goBtn" onclick="run()">CHECK</button>
-</div>
-<div id="keyBar" style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-  <input type="text" id="apiKey" placeholder="paste pro key (tr_...)" 
-    style="flex:1;background:#0f0f0f;border:1px solid #1e1e1e;color:#e5e5e5;
-    font-family:'Space Mono',monospace;font-size:10px;padding:8px 12px;outline:none"/>
-  <button onclick="saveKey(); return false;" 
-    style="background:transparent;border:1px solid #f97316;color:#f97316;
-    padding:8px 14px;font-family:'Space Mono',monospace;font-size:9px;cursor:pointer">
-    ACTIVATE
-  </button>
-</div>
-
-<div id="upgradeBar" style="display:none;background:rgba(249,115,22,.06);
-  border:1px solid rgba(249,115,22,.2);padding:14px 16px;margin-bottom:10px;font-size:10px">
-  <div style="color:#f97316;font-weight:700;margin-bottom:6px">
-    🔒 FREE LIMIT REACHED — 3/3 checks used today
-  </div>
-  <div style="color:#555;margin-bottom:10px;line-height:1.6">
-    Upgrade to TrenchReads Pro for unlimited checks, full holder data, 
-    contract security details and Telegram bot access.
-  </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <a href="https://trenchreads.lemonsqueezy.com" target="_blank"
-      style="background:#f97316;color:#000;padding:8px 16px;font-size:9px;
-      font-weight:700;text-decoration:none;letter-spacing:1px">
-      $7/MONTH — PAY BY CARD
-    </a>
-    <a href="https://trenchreads.vercel.app/#crypto" target="_blank"
-      style="background:transparent;border:1px solid #f97316;color:#f97316;
-      padding:8px 16px;font-size:9px;font-weight:700;text-decoration:none;letter-spacing:1px">
-      PAY WITH CRYPTO
-    </a>
-  </div>
-</div>
-
-<div class="chains">supports<span>Solana</span><span>Ethereum</span><span>BSC</span><span>Base</span><span>Polygon</span><span>Arbitrum</span><span>Avalanche</span></div>
-
-<div class="eb" id="eb"></div>
-
-<div class="load" id="load">
-  <div class="sl">scanning onchain...</div>
-  <div class="ss">
-    <div class="ss-i" id="s1">fetching market data from DexScreener</div>
-    <div class="ss-i" id="s2">running security scan via GoPlus</div>
-    <div class="ss-i" id="s3">analysing holder concentration</div>
-    <div class="ss-i" id="s4">calculating risk score & verdict</div>
-  </div>
-</div>
-
-<div class="res" id="res">
-
-  <!-- VERDICT -->
-  <div class="vc" id="vc">
-    <div class="vring" id="vr">
-      <div class="vnum" id="vnum">—</div>
-      <div class="vdenom">/ 100</div>
+<!-- Upgrade bar -->
+<div class="wrap">
+  <div id="ub">
+    <div id="ut" onclick="togglePay()">
+      <div class="ul">
+        <span class="ubadge">PRO</span>
+        Unlimited scans — one-time payment
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="uprice">5 USDC</span>
+        <span class="uchev">▼</span>
+      </div>
     </div>
-    <div class="vi">
-      <div class="vt" id="vt">—</div>
-      <div class="vs" id="vs">—</div>
-          <div id="aiverdict" style="display:none;margin-top:12px;padding:10px;border:1px solid #f90;font-size:11px;color:#aaa;white-space:pre-wrap;line-height:1.6"></div>
-      <div class="tk">
-        <img id="tlogo" src="" onerror="this.style.display='none'"/>
-        <span id="tsym">—</span>
-        <span class="cbl" id="cbl">—</span>
-        <span id="dxl" style="font-size:9px;color:var(--mu)"></span>
-        <span class="dex-paid" id="dexpaid" style="display:none">🔥 DEX PAID</span>
+    <div id="pp">
+      <h3>Pay with USDC on Solana</h3>
+      <p class="psub">One-time · lifetime pro access · key delivered instantly</p>
+      <div id="wr">
+        <div>
+          <div class="wlbl">Send exactly to this address</div>
+          <div class="waddr">HNtyVRDXSsAWJbWVoZEgokFQKsXaFoqM9CiicWgRF2FR</div>
+        </div>
+        <button id="cwb" onclick="copyWallet()">Copy</button>
+      </div>
+      <div id="an">
+        <span class="amt">5 USDC</span>
+        <span>Solana mainnet only (SPL USDC). Any other amount/chain will not activate.</span>
+      </div>
+      <div class="pf">
+        <label for="txi">Transaction Signature</label>
+        <input id="txi" type="text" placeholder="Paste your Solana tx signature…" autocomplete="off" spellcheck="false"/>
+      </div>
+      <div class="pf">
+        <label for="emi">Email (backup key delivery)</label>
+        <input id="emi" type="email" placeholder="you@example.com"/>
+      </div>
+      <button id="vb" onclick="verifyPayment()">Verify Payment &amp; Get Key</button>
+      <div id="ps"></div>
+      <div id="kd">
+        <div class="kdl">✓ Pro Key Activated</div>
+        <div id="dk"></div>
+        <button id="ckb" onclick="copyDeliveredKey()">Copy Key</button>
+        <p style="margin-top:8px;font-size:11px;color:var(--mu)">Key saved automatically. Paste into the key bar above to activate on any device.</p>
+      </div>
+      <div class="ph">
+        Need help? DM <a href="https://t.me/Web3Abdull" target="_blank" rel="noopener">@Web3Abdull on Telegram</a>
+        · Verify on <a href="https://solscan.io" target="_blank" rel="noopener">Solscan</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Error banner -->
+<div class="wrap"><div id="eb"><div class="ei" id="em"></div></div></div>
+
+<!-- Loading steps -->
+<div class="wrap"><div id="ls">
+  <div class="step" id="s1"><span class="sd"></span> Fetching token metadata</div>
+  <div class="step" id="s2"><span class="sd"></span> Analysing liquidity &amp; trading activity</div>
+  <div class="step" id="s3"><span class="sd"></span> Checking holder concentration</div>
+  <div class="step" id="s4"><span class="sd"></span> Running contract security checks</div>
+  <div class="step" id="s5"><span class="sd"></span> Scoring risk profile</div>
+</div></div>
+
+<!-- Results -->
+<div id="res">
+
+  <!-- Verdict card -->
+  <div id="vc">
+    <div id="vh">
+      <div>
+        <div><span id="vt"></span><span id="vtsym"></span></div>
+        <div id="vvt"></div>
+        <div id="vs"></div>
+      </div>
+      <div id="vnum"></div>
+    </div>
+    <div id="vb2">
+      <div id="cbl"></div>
+      <div id="swb"></div>
+      <div id="socialsBar">
+        <a id="lkX"    href="#" target="_blank" rel="noopener">𝕏 Twitter</a>
+        <a id="lkTg"   href="#" target="_blank" rel="noopener">✈ Telegram</a>
+        <a id="lkWeb"  href="#" target="_blank" rel="noopener">🌐 Website</a>
+        <a id="lkChart" href="#" target="_blank" rel="noopener">📊 Chart</a>
       </div>
     </div>
   </div>
 
-  <!-- SMART WALLETS -->
-  <div id="smartWalletBar" style="display:none;align-items:center;gap:8px;padding:8px 14px;background:rgba(153,69,255,.08);border:1px solid rgba(153,69,255,.2);margin-bottom:2px;font-size:10px;">
-    <span style="font-size:14px">👥</span>
-    <span id="swCount" style="color:#9945ff;font-weight:700"></span>
-    <span style="color:var(--mu);margin-left:auto">smart money signal</span>
+  <!-- Flags -->
+  <div class="sl">Risk Flags</div>
+  <div id="flagsEl"></div>
+
+  <!-- Market -->
+  <div class="sl">Market Data</div>
+  <div id="mktEl" class="mg"></div>
+  <div id="mBS"></div>
+
+  <!-- Holders -->
+  <div id="holderSec">
+    <div class="sl">Holder Concentration</div>
+    <div id="concPct"></div>
+    <div id="concBar"><div></div></div>
+    <div id="concVerdict"></div>
+    <div id="holdersEl"></div>
   </div>
 
-  <!-- SOCIALS -->
-  <div class="socials" id="socialsBar" style="display:none">
-    <span class="soc-label">Links</span>
-    <a id="lkX" class="soc-link x" href="#" target="_blank" style="display:none">𝕏 Twitter</a>
-    <a id="lkTg" class="soc-link tg" href="#" target="_blank" style="display:none">✈ Telegram</a>
-    <a id="lkWeb" class="soc-link web" href="#" target="_blank" style="display:none">🌐 Website</a>
-    <a id="lkChart" class="chart-link" href="#" target="_blank" style="display:none">📊 Chart</a>
+  <!-- Contract security -->
+  <div class="sl">Contract Security</div>
+  <div id="secEl">
+    <div class="sec-row" id="rMint">  <span class="sr-l">Mint Authority</span>   <span id="sMint"></span></div>
+    <div class="sec-row" id="rFreeze"><span class="sr-l">Freeze Authority</span>  <span id="sFreeze"></span></div>
+    <div class="sec-row" id="rHoney"> <span class="sr-l">Honeypot</span>          <span id="sHoney"></span></div>
+    <div class="sec-row" id="rClose"> <span class="sr-l">Closable</span>          <span id="sClose"></span></div>
+    <div class="sec-row" id="rBuyTax" style="display:none"><span class="sr-l">Buy Tax</span>   <span id="fBuyTax"></span></div>
+    <div class="sec-row" id="rSellTax" style="display:none"><span class="sr-l">Sell Tax</span> <span id="fSellTax"></span></div>
+    <div class="sec-row" id="rHidden"   style="display:none"><span class="sr-l">Hidden Owner</span>     <span id="fHidden"></span></div>
+    <div class="sec-row" id="rBlacklist" style="display:none"><span class="sr-l">Blacklist Fn</span>   <span id="fBlacklist"></span></div>
+    <div class="sec-row" id="rPause"     style="display:none"><span class="sr-l">Transfer Pausable</span><span id="fPause"></span></div>
+    <div class="sec-row" id="rPProxy"    style="display:none"><span class="sr-l">Proxy Contract</span> <span id="fProxy"></span></div>
+    <div class="sec-row" id="rOpen"      style="display:none"><span class="sr-l">Open Source</span>    <span id="fOpen"></span></div>
   </div>
 
-  <!-- RISK FLAGS -->
-  <div class="sec">
-    <div class="sh">Risk Flags</div>
-    <div class="flags" id="flagsEl"></div>
-  </div>
+  <!-- Score breakdown -->
+  <div class="sl">Score Breakdown</div>
+  <div id="bdEl"></div>
 
-  <!-- MARKET DATA -->
-  <div class="sec">
-    <div class="sh">Market Data</div>
-    <div class="dg">
-      <div class="dr"><div class="dk">Price</div><div class="dv" id="mP">—</div></div>
-      <div class="dr"><div class="dk">Market Cap</div><div class="dv" id="mM">—</div><div class="df" id="mMf"></div></div>
-      <div class="dr"><div class="dk">Liquidity</div><div class="dv" id="mL">—</div><div class="df" id="mLf"></div></div>
-      <div class="dr"><div class="dk">Rug Exit Risk</div><div class="dv" id="mR">—</div><div class="df" id="mRf"></div></div>
-      <div class="dr"><div class="dk">24h Volume</div><div class="dv" id="mV">—</div><div class="df" id="mVf"></div></div>
-      <div class="dr"><div class="dk">24h Change</div><div class="dv" id="mC">—</div></div>
-      <div class="dr"><div class="dk">Buys / Sells</div><div class="dv" id="mBS">—</div></div>
-      <div class="dr"><div class="dk">Token Age</div><div class="dv" id="mA">—</div><div class="df" id="mAf"></div></div>
-      <div class="dr"><div class="dk">DEX</div><div class="dv" id="mD">—</div></div>
-      <div class="dr"><div class="dk">Total Holders</div><div class="dv" id="mH">—</div></div>
-    </div>
+  <!-- Actions -->
+  <div class="sl">Actions</div>
+  <div id="actRow">
+    <a id="aDex"  class="abt" href="#" target="_blank" rel="noopener">📊 DexScreener</a>
+    <a id="aSol"  class="abt" href="#" target="_blank" rel="noopener">🔍 Solscan</a>
+    <a id="aBird" class="abt" href="#" target="_blank" rel="noopener">🦅 Birdeye</a>
+    <a id="aGop"  class="abt" href="#" target="_blank" rel="noopener">🛡 GoPlus</a>
+    <button id="cpb" class="abt" onclick="shareX()">𝕏 Share</button>
+    <button        class="abt" onclick="copyIt()" id="cpBtn">📋 Copy Verdict</button>
   </div>
+  <div id="ft"></div>
 
-  <!-- HOLDER CONCENTRATION -->
-  <div class="sec" id="holderSec" style="display:none">
-    <div class="sh">Holder Concentration</div>
-    <div class="conc">
-      <div class="conc-label">Top 10 Holders — Supply Concentration</div>
-      <div class="conc-bar-bg">
-        <div class="conc-bar-fill" id="concBar" style="width:0%"></div>
-      </div>
-      <div class="conc-stats">
-        <span id="concPct">—</span>
-        <span id="concVerdict">—</span>
-      </div>
-    </div>
-    <div class="holders" id="holdersEl"></div>
-  </div>
+</div><!-- /res -->
 
-  <!-- CONTRACT SECURITY -->
-  <div class="sec">
-    <div class="sh">Contract Security</div>
-    <div class="dg" id="secGrid">
-      <div class="dr"><div class="dk">Mint Authority</div><div class="dv" id="fMint">—</div></div>
-      <div class="dr"><div class="dk">Freeze / Lock</div><div class="dv" id="fFreeze">—</div></div>
-      <div class="dr"><div class="dk">Honeypot</div><div class="dv" id="fHoney">—</div></div>
-      <div class="dr"><div class="dk">Closable</div><div class="dv" id="fClose">—</div></div>
-      <div class="dr" id="rBuyTax" style="display:none"><div class="dk">Buy Tax</div><div class="dv" id="fBuyTax">—</div></div>
-      <div class="dr" id="rSellTax" style="display:none"><div class="dk">Sell Tax</div><div class="dv" id="fSellTax">—</div></div>
-      <div class="dr" id="rHidden" style="display:none"><div class="dk">Hidden Owner</div><div class="dv" id="fHidden">—</div></div>
-      <div class="dr" id="rBlacklist" style="display:none"><div class="dk">Blacklist Fn</div><div class="dv" id="fBlacklist">—</div></div>
-      <div class="dr" id="rPause" style="display:none"><div class="dk">Transfer Pause</div><div class="dv" id="fPause">—</div></div>
-      <div class="dr" id="rProxy" style="display:none"><div class="dk">Proxy Contract</div><div class="dv" id="fProxy">—</div></div>
-      <div class="dr" id="rOpen" style="display:none"><div class="dk">Open Source</div><div class="dv" id="fOpen">—</div></div>
-    </div>
-  </div>
-
-  <!-- SCORE BREAKDOWN -->
-  <div class="sec">
-    <div class="sh">Score Breakdown</div>
-    <div class="bd" id="bdEl"></div>
-  </div>
-
-  <!-- ACTIONS -->
-  <div class="acts">
-    <button class="ab xb" onclick="shareX()">→ share on X</button>
-    <button class="ab" id="cpb" onclick="copyIt()">→ copy verdict</button>
-  </div>
-  <button class="rb" onclick="reset()">→ check another</button>
-  <div class="rf">
-    <span>TRENCHREADS — checked onchain not on vibes</span>
-    <span id="ft">—</span>
-  </div>
-</div>
-
-<div class="disc">not financial advice. dyor always.<br>data: dexscreener + goplus security</div>
-</div>
+<!-- Footer -->
+<footer>
+  TrenchReads · built by
+  <a href="https://twitter.com/ADAMINDA_1" target="_blank" rel="noopener">@ADAMINDA_1</a>
+  · data via DexScreener &amp; GoPlus
+  · <a href="#" onclick="clearKey();return false;">Clear pro key</a>
+</footer>
 
 <script>
-let S = {};
-let PRO_KEY = localStorage.getItem('tr_key') || '';
-if (PRO_KEY) document.getElementById('apiKey').value = PRO_KEY;
+// ── Constants ──────────────────────────────────────────────────────────────
+const PAY_WALLET = 'HNtyVRDXSsAWJbWVoZEgokFQKsXaFoqM9CiicWgRF2FR';
+const KEY_LS     = 'tr_pro_key';
 
-async function saveKey() {
-  const k = document.getElementById('apiKey').value.trim();
-  if (k.startsWith('tr_')) {
-    PRO_KEY = k;
-    localStorage.setItem('tr_key', k);
-    document.getElementById('apiKey').style.borderColor = 'var(--gr)';
-    setTimeout(() => document.getElementById('apiKey').style.borderColor = '#1e1e1e', 2000);
+// ── State ──────────────────────────────────────────────────────────────────
+let PRO_KEY = localStorage.getItem(KEY_LS) || '';
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  ping();
+  if (PRO_KEY) {
+    document.getElementById('ak').value = PRO_KEY;
+    setKS('Pro key active ✓', 'ok');
   }
-}
-const PROXY = '/api';
+});
 
-window.addEventListener('load', ping);
-document.getElementById('ca').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
-
+// ── Proxy ping ─────────────────────────────────────────────────────────────
 async function ping() {
   try {
-    await fetch(`${PROXY}/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"address":"test"}', signal: AbortSignal.timeout(8000) });
-    setPx(true);
-  } catch (e) { setPx(false); }
+    const r = await fetch('/api/check', { method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ping:true}) });
+    const ok = r.ok;
+    document.getElementById('pst').textContent = ok ? 'Proxy online' : 'Proxy degraded';
+    document.getElementById('pst').style.color  = ok ? 'var(--ac)' : 'var(--dan)';
+    document.querySelector('.pdot').style.background = ok ? 'var(--ac)' : 'var(--dan)';
+  } catch {
+    document.getElementById('pst').textContent = 'Proxy offline';
+    document.getElementById('pst').style.color  = 'var(--dan)';
+    document.querySelector('.pdot').style.background = 'var(--dan)';
+  }
 }
 
-function setPx(ok) {
-  document.getElementById('pd').className = 'pd ' + (ok ? 'ok' : 'fail');
-  document.getElementById('pm').textContent = ok ? 'proxy connected — real-time data active' : 'proxy offline — run: node rugcheck-proxy.cjs in terminal';
+// ── Key management ─────────────────────────────────────────────────────────
+function saveKey() {
+  const v = document.getElementById('ak').value.trim();
+  if (!v.startsWith('tr_')) { setKS('Invalid key — must start with tr_','err'); return; }
+  PRO_KEY = v;
+  localStorage.setItem(KEY_LS, v);
+  setKS('Pro key saved ✓','ok');
+}
+function clearKey() {
+  PRO_KEY = '';
+  localStorage.removeItem(KEY_LS);
+  document.getElementById('ak').value = '';
+  setKS('Key cleared','');
+}
+function setKS(msg, cls) {
+  const el = document.getElementById('ks');
+  el.textContent = msg; el.className = cls;
 }
 
-function chain(ca) {
-  if (/^0x[a-fA-F0-9]{40}$/.test(ca)) return 'evm';
-  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(ca)) return 'sol';
-  return null;
+// ── Pay panel toggle ───────────────────────────────────────────────────────
+function togglePay() {
+  const ut = document.getElementById('ut');
+  const pp = document.getElementById('pp');
+  const open = pp.classList.toggle('vis');
+  ut.classList.toggle('open', open);
 }
 
+// ── Copy wallet ────────────────────────────────────────────────────────────
+function copyWallet() {
+  navigator.clipboard.writeText(PAY_WALLET).then(() => {
+    const b = document.getElementById('cwb');
+    b.textContent = 'Copied!'; b.classList.add('copied');
+    setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── Verify payment ─────────────────────────────────────────────────────────
+async function verifyPayment() {
+  const sig   = document.getElementById('txi').value.trim();
+  const email = document.getElementById('emi').value.trim();
+  const btn   = document.getElementById('vb');
+  if (!sig)   { setPSt('Paste your transaction signature first.','err'); return; }
+  if (!email) { setPSt('Enter your email for backup key delivery.','err'); return; }
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  setPSt('Checking transaction on-chain…','');
+  try {
+    const res  = await fetch('/api/verify-payment', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ txSignature: sig, email })
+    });
+    const data = await res.json();
+    if (res.ok && data.key) {
+      PRO_KEY = data.key;
+      localStorage.setItem(KEY_LS, data.key);
+      document.getElementById('ak').value = data.key;
+      setKS('Pro key active ✓','ok');
+      document.getElementById('dk').textContent = data.key;
+      document.getElementById('kd').classList.add('vis');
+      setPSt('Payment verified — pro access activated!','ok');
+    } else {
+      setPSt(data.error || 'Verification failed. Check your signature and try again.','err');
+    }
+  } catch {
+    setPSt('Network error — please try again.','err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Verify Payment & Get Key';
+  }
+}
+function setPSt(msg, cls) {
+  const el = document.getElementById('ps'); el.textContent = msg; el.className = cls;
+}
+function copyDeliveredKey() {
+  const key = document.getElementById('dk').textContent;
+  navigator.clipboard.writeText(key).then(() => {
+    const b = document.getElementById('ckb');
+    b.textContent = 'Copied!';
+    setTimeout(() => { b.textContent = 'Copy Key'; }, 2000);
+  });
+}
+
+// ── Main scan ──────────────────────────────────────────────────────────────
 async function run() {
   const ca = document.getElementById('ca').value.trim();
-  if (!ca) return setErr('paste a contract address first.');
-  if (!chain(ca)) return setErr('invalid address. solana or EVM (0x...) only.');
-  clearErr(); showLoad(); S = { ca };
+  if (!ca) return;
+  hideLoad(); clearRes(); showErr('');
+  document.getElementById('ls').style.display = 'block';
+  animSteps();
+  document.getElementById('sb').disabled = true;
   try {
-    stp(1, 'on'); stp(2, 'on');
-    const r = await callProxy(ca);
-    S.dex = r.dex; S.sec = r.sec; S.chain = r.chain; S.ai = r.ai;
-    stp(1, 'dn'); stp(2, 'dn');
-    stp(3, 'on');
-    await sleep(200);
-    stp(3, 'dn');
-    stp(4, 'on');
-   S.score = r.score ?? 0;
-    S.smartWallets = r.smartWallets ?? null;
-    S.sc = calcScore(S.dex, S.sec);
-    S.sc.score = r.score ?? S.sc.score;
-    const _rugRatio = (S.dex?.liquidity > 0 && S.dex?.mcap > 0) ? (S.dex.liquidity / S.dex.mcap) * 100 : 999;
-    const _criticalRug = _rugRatio < 1;
-    if (S.sc.score >= 70 && !_criticalRug) { S.sc.verdict = 'RELATIVELY SAFE'; S.sc.cls = 'safe'; }
-    else if (S.sc.score >= 70 && _criticalRug) { S.sc.verdict = 'PROCEED WITH CAUTION'; S.sc.cls = 'caution'; }
-    else if (S.sc.score >= 45) { S.sc.verdict = 'PROCEED WITH CAUTION'; S.sc.cls = 'caution'; }
-    else { S.sc.verdict = 'HIGH RISK — AVOID'; S.sc.cls = 'danger'; }
-    S.flags = buildFlags(S.dex, S.sec, S.sc);
-    await sleep(200);
-    stp(4, 'dn');
-    render();
-  } catch (e) { hideLoad(); setErr(e.message); }
+    const S = await callProxy(ca);
+    hideLoad();
+    if (S.error) { showErr(S.error); return; }
+    render(S);
+  } catch(e) {
+    hideLoad();
+    showErr('Request failed — check your connection and try again.');
+  } finally {
+    document.getElementById('sb').disabled = false;
+  }
 }
 
 async function callProxy(ca) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 15000);
-  try {
-    const r = await fetch(`${PROXY}/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address: ca, apiKey: PRO_KEY }), signal: ctrl.signal });
-    clearTimeout(t);
-    const j = await r.json();
-    if (j.error === 'free_limit_reached') {
-      hideLoad();
-      document.getElementById('upgradeBar').style.display = 'block';
-      throw new Error(j.message);
-    }
-    if (j.error && !j.dex && !j.sec) throw new Error(j.error);
-    return j;
-  } catch (e) {
-    clearTimeout(t);
-    throw new Error('check failed. try again.');
-  }
+  const body = { ca };
+  if (PRO_KEY) body.proKey = PRO_KEY;
+  const r = await fetch('/api/check', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  return r.json();
 }
 
+// ── Loading animation ──────────────────────────────────────────────────────
+let stepTimers = [];
+function animSteps() {
+  stepTimers.forEach(clearTimeout); stepTimers = [];
+  const steps = document.querySelectorAll('#ls .step');
+  steps.forEach(s => { s.classList.remove('active','done'); });
+  steps.forEach((s, i) => {
+    stepTimers.push(setTimeout(() => {
+      if (i > 0) steps[i-1].classList.replace('active','done');
+      s.classList.add('active');
+    }, i * 900));
+  });
+}
+function hideLoad() {
+  document.getElementById('ls').style.display = 'none';
+  document.querySelectorAll('#ls .step').forEach(s => s.classList.remove('active','done'));
+  stepTimers.forEach(clearTimeout); stepTimers = [];
+}
+
+// ── calcScore ──────────────────────────────────────────────────────────────
 function calcScore(dex, sec) {
   let s = 100;
-  const bd = [];
-  const liq = dex?.liquidity ?? 0, mcap = dex?.mcap ?? 0;
-  const vol = dex?.volume24h ?? 0, age = dex?.ageDays;
-  const buys = dex?.buys24h ?? 0, sells = dex?.sells24h ?? 0;
+  const liq  = dex?.liquidity ?? 0;
+  const mcap = dex?.mcap ?? 0;
+  const vol  = dex?.volume24h ?? 0;
+  const age  = dex?.ageDays;
+  const buys = dex?.buys24h ?? 0;
+  const sells = dex?.sells24h ?? 0;
 
-  // LIQUIDITY
-  if (liq === 0) { s -= 40; bd.push({ l: 'Liquidity', p: -40, c: 'var(--rd)', n: 'no liquidity — extreme danger' }); }
-  else if (liq < 1000) { s -= 35; bd.push({ l: 'Liquidity', p: -35, c: 'var(--rd)', n: `$${f(liq)} — critically low` }); }
-  else if (liq < 5000) { s -= 28; bd.push({ l: 'Liquidity', p: -28, c: 'var(--rd)', n: `$${f(liq)} — very low` }); }
-  else if (liq < 20000) { s -= 18; bd.push({ l: 'Liquidity', p: -18, c: 'var(--rd)', n: `$${f(liq)} — low` }); }
-  else if (liq < 50000) { s -= 8; bd.push({ l: 'Liquidity', p: -8, c: 'var(--yl)', n: `$${f(liq)} — below average` }); }
-  else { bd.push({ l: 'Liquidity', p: 0, c: 'var(--gr)', n: `$${f(liq)} — ${liq > 200000 ? 'strong' : 'moderate'}` }); }
-
-  // LIQ/MCAP — only penalise if there is also trading activity
-  if (liq > 0 && mcap > 0) {
-    const r = (liq / mcap) * 100;
-    if (r < 0.5) { s -= 30; bd.push({ l: 'Rug Exit Risk — CRITICAL', p: -30, c: 'var(--rd)', n: `only ${r.toFixed(2)}% of mcap is liquid — insiders can exit without crashing their own bags. you cannot.` }); } else if (r < 1 && vol > 100) { s -= 15; bd.push({ l: 'Rug Exit Risk — HIGH', p: -15, c: 'var(--rd)', n: `${r.toFixed(1)}% — thin exit barrier. coordinated dump will wipe holders before they can react` }); }
-    else if (r < 3 && vol > 100) { s -= 8; bd.push({ l: 'Rug Exit Risk', p: -8, c: 'var(--yl)', n: `${r.toFixed(1)}% — thin buffer. large sells will move price hard against you` }); }
-    else { bd.push({ l: 'Rug Exit Risk', p: 0, c: 'var(--gr)', n: `${r.toFixed(1)}% — ${r > 10 ? 'healthy. hard to rug' : 'acceptable — monitor large wallets'}` }); }
-  } else { s -= 5; bd.push({ l: 'Rug Exit Risk', p: -5, c: 'var(--mu)', n: 'no data — dump risk cannot be assessed' }); }
-
-  // TOKEN AGE
-  if (age === null || age === undefined) { s -= 5; bd.push({ l: 'Token Age', p: -5, c: 'var(--mu)', n: 'unknown' }); }
-  else if (age < 1) { s -= 15; bd.push({ l: 'Token Age', p: -15, c: 'var(--rd)', n: `${dex.ageHours}h old — brand new` }); }
-  else if (age < 3) { s -= 10; bd.push({ l: 'Token Age', p: -10, c: 'var(--yl)', n: `${age}d old — very new` }); }
-  else if (age < 7) { s -= 5; bd.push({ l: 'Token Age', p: -5, c: 'var(--yl)', n: `${age}d old — new` }); }
-  else { bd.push({ l: 'Token Age', p: 0, c: 'var(--gr)', n: `${age}d old` }); }
-
-  // TRADING ACTIVITY — CRITICAL
-  if (buys === 0 && sells === 0 && liq > 0) { s -= 30; bd.push({ l: 'Trading Activity', p: -30, c: 'var(--rd)', n: '0 buys & 0 sells — dead or rugged' }); }
-  else if (vol < 50 && liq > 0) { s -= 20; bd.push({ l: '24h Volume', p: -20, c: 'var(--rd)', n: `$${f(vol)} — essentially no activity` }); }
-  else if (vol < 500) { s -= 8; bd.push({ l: '24h Volume', p: -8, c: 'var(--yl)', n: `$${f(vol)} — very low` }); }
-  else { bd.push({ l: '24h Volume', p: 0, c: 'var(--gr)', n: `$${f(vol)} — active` }); }
-
-  // SELL PRESSURE
-  if (buys > 0 && sells > 0) {
-    const ratio = sells / (buys + sells);
-    if (ratio > 0.8) { s -= 10; bd.push({ l: 'Sell Pressure', p: -10, c: 'var(--rd)', n: `${(ratio * 100).toFixed(0)}% sells — heavy dump pressure` }); }
-    else if (ratio > 0.65) { s -= 5; bd.push({ l: 'Sell Pressure', p: -5, c: 'var(--yl)', n: `${(ratio * 100).toFixed(0)}% sells — elevated` }); }
-    else { bd.push({ l: 'Sell Pressure', p: 0, c: 'var(--gr)', n: `${(ratio * 100).toFixed(0)}% sells — balanced` }); }
+  // Trading activity
+  if (buys === 0 && sells === 0 && liq > 0) { s -= 30; }
+  else {
+    if (vol < 50 && liq > 0)   s -= 20;
+    else if (vol < 500)        s -= 8;
+    // Sell pressure
+    if (buys > 0 && sells > 0) {
+      const ratio = sells / (buys + sells);
+      if (ratio > 0.8)       s -= 10;
+      else if (ratio > 0.65) s -= 5;
+    }
   }
 
-  // MICRO MCAP
-  if (mcap > 0 && mcap < 5000) { s -= 10; bd.push({ l: 'Market Cap', p: -10, c: 'var(--rd)', n: `$${f(mcap)} — micro cap` }); }
+  // Micro mcap
+  if (mcap > 0 && mcap < 5000) s -= 10;
 
-  // MINT AUTHORITY
-  if (sec?.mintAuth === 'RISK') { s -= 15; bd.push({ l: 'Mint Authority', p: -15, c: 'var(--rd)', n: 'active — dev can print & dump' }); }
-  else if (sec?.mintAuth === 'safe') { bd.push({ l: 'Mint Authority', p: 0, c: 'var(--gr)', n: 'revoked' }); }
-  else { s -= 4; bd.push({ l: 'Mint Authority', p: -4, c: 'var(--mu)', n: 'unverified' }); }
+  // Mint authority
+  if (sec?.mintAuth === 'RISK')   s -= 15;
+  else if (sec?.mintAuth === 'safe') s -= 0;
+  else                             s -= 4;
 
-  // FREEZE / HONEYPOT
-  if (sec?.freezeAuth === 'RISK') { s -= 10; bd.push({ l: 'Freeze Authority', p: -10, c: 'var(--rd)', n: 'active — funds can be frozen' }); }
-  if (sec?.honeypot === 'DETECTED') { s -= 20; bd.push({ l: 'Honeypot', p: -20, c: 'var(--rd)', n: 'honeypot — cannot sell' }); }
+  // Freeze / honeypot
+  if (sec?.freezeAuth === 'RISK') s -= 10;
+  if (sec?.honeypot === 'DETECTED') s -= 20;
 
-  // HIDDEN FUNCTIONS
-  if (sec?.isBlacklisted === 'RISK') { s -= 8; bd.push({ l: 'Blacklist Function', p: -8, c: 'var(--rd)', n: 'dev can block wallets from selling' }); }
-  if (sec?.transferPausable === 'RISK') { s -= 8; bd.push({ l: 'Transfer Pausable', p: -8, c: 'var(--rd)', n: 'dev can pause all transfers' }); }
-  if (sec?.hiddenOwner === 'RISK') { s -= 8; bd.push({ l: 'Hidden Owner', p: -8, c: 'var(--rd)', n: 'anonymous control over contract' }); }
-  if (sec?.canTakeBack === 'RISK') { s -= 8; bd.push({ l: 'Ownership Reclaim', p: -8, c: 'var(--rd)', n: 'owner can take back control' }); }
-  if (sec?.isProxy === 'yes') { s -= 5; bd.push({ l: 'Proxy Contract', p: -5, c: 'var(--yl)', n: 'upgradeable — rules can change' }); }
+  // Hidden functions
+  if (sec?.isBlacklisted === 'RISK')     s -= 8;
+  if (sec?.transferPausable === 'RISK')  s -= 8;
+  if (sec?.hiddenOwner === 'RISK')       s -= 8;
+  if (sec?.canTakeBack === 'RISK')       s -= 8;
+  if (sec?.isProxy)                      s -= 5;
 
-  // SELL TAX
+  // Sell tax
   const st = sec?.sellTax ? parseFloat(sec.sellTax) : 0;
-  if (st > 10) { s -= 10; bd.push({ l: 'Sell Tax', p: -10, c: 'var(--rd)', n: `${sec.sellTax} — very high` }); }
-  else if (st > 5) { s -= 5; bd.push({ l: 'Sell Tax', p: -5, c: 'var(--yl)', n: `${sec.sellTax} — elevated` }); }
+  if (st > 10) s -= 10;
 
-  // HOLDER CONCENTRATION
+  // Holder concentration
   const top10 = sec?.top10HolderPct ? parseFloat(sec.top10HolderPct) : null;
   const creatorPct = sec?.creatorPct ? parseFloat(sec.creatorPct) : null;
   if (top10 !== null) {
-    if (top10 > 80) { s -= 15; bd.push({ l: 'Holder Concentration', p: -15, c: 'var(--rd)', n: `top 10 hold ${top10}% — extreme concentration` }); }
-    else if (top10 > 60) { s -= 10; bd.push({ l: 'Holder Concentration', p: -10, c: 'var(--yl)', n: `top 10 hold ${top10}% — high concentration` }); }
-    else if (top10 > 40) { s -= 5; bd.push({ l: 'Holder Concentration', p: -5, c: 'var(--yl)', n: `top 10 hold ${top10}% — moderate` }); }
-    else { bd.push({ l: 'Holder Concentration', p: 0, c: 'var(--gr)', n: `top 10 hold ${top10}% — well distributed` }); }
+    if (top10 > 80) s -= 15;
+    else if (top10 > 60) s -= 10;
+    else if (top10 > 40) s -= 5;
   }
-  if (creatorPct !== null && creatorPct > 10) {
-    s -= 10; bd.push({ l: 'Dev Holdings', p: -10, c: 'var(--rd)', n: `creator holds ${creatorPct}% — dump risk` });
-  } else if (creatorPct !== null && creatorPct > 5) {
-    s -= 5; bd.push({ l: 'Dev Holdings', p: -5, c: 'var(--yl)', n: `creator holds ${creatorPct}% — monitor closely` });
-  }
+  if (creatorPct !== null && creatorPct > 10) s -= 10;
+  else if (creatorPct !== null && creatorPct > 5) s -= 5;
 
   s = Math.max(0, Math.min(100, Math.round(s)));
+
+  // Missing critical check
   const missingCritical = (sec?.freezeAuth !== 'RISK' && sec?.freezeAuth !== 'safe') ||
                           (sec?.honeypot !== 'DETECTED' && sec?.honeypot !== 'none');
-  if (missingCritical && s > 85) {
-    s = 85;
-    bd.push({ l: 'Incomplete Security Scan', p: 0, c: 'var(--yl)', n: 'freeze authority or honeypot status unconfirmed — score capped at 85 until verified' });
-  }
+  if (missingCritical && s > 85) s = 85;
+
   let verdict, cls;
-  if (s >= 70) { verdict = 'RELATIVELY SAFE'; cls = 'safe'; }
-  else if (s >= 45) { verdict = 'PROCEED WITH CAUTION'; cls = 'caution'; }
-  else { verdict = 'HIGH RISK — AVOID'; cls = 'danger'; }
+  if (s >= 70)      { verdict = 'RELATIVELY SAFE';       cls = 'safe'; }
+  else if (s >= 45) { verdict = 'PROCEED WITH CAUTION';  cls = 'warn'; }
+  else              { verdict = 'HIGH RISK – AVOID';      cls = 'danger'; }
+
+  const bd = buildFlags(dex, sec, s);
   return { score: s, verdict, cls, bd };
 }
 
+// ── buildFlags ─────────────────────────────────────────────────────────────
 function buildFlags(dex, sec, sc) {
   const flags = [];
-  const liq = dex?.liquidity ?? 0, mcap = dex?.mcap ?? 0;
-  const vol = dex?.volume24h ?? 0, age = dex?.ageDays;
-  const buys = dex?.buys24h ?? 0, sells = dex?.sells24h ?? 0;
+  const liq   = dex?.liquidity ?? 0;
+  const mcap  = dex?.mcap ?? 0;
+  const vol   = dex?.volume24h ?? 0;
+  const age   = dex?.ageDays;
+  const buys  = dex?.buys24h ?? 0;
+  const sells = dex?.sells24h ?? 0;
   const top10 = sec?.top10HolderPct ? parseFloat(sec.top10HolderPct) : null;
   const creatorPct = sec?.creatorPct ? parseFloat(sec.creatorPct) : null;
-  const ownerPct = sec?.ownerPct ? parseFloat(sec.ownerPct) : null;
+  const ownerPct   = sec?.ownerPct   ? parseFloat(sec.ownerPct)   : null;
 
   // CRITICAL
   if (sec?.honeypot === 'DETECTED')
-    flags.push({ ic: '🔴', t: 'Honeypot Detected', tc: 'rd', d: 'You can buy but you CANNOT sell. Your funds are permanently trapped.', sev: 4 });
+    flags.push({ ic:'🚨', t:'Honeypot Detected', tc:'rd', d:'You can buy but you CANNOT sell. Your funds are permanently trapped.', sev:4 });
   if (buys === 0 && sells === 0 && liq > 0)
-    flags.push({ ic: '🔴', t: 'Dead Token — Zero Trading Activity', tc: 'rd', d: 'No buys or sells in 24 hours despite liquidity existing. Token is dead or already rugged.', sev: 4 });
+    flags.push({ ic:'🚨', t:'Dead Token – Zero Trading Activity', tc:'rd', d:'No buys or sells in 24 hours despite liquidity existing. Token is dead or already rugged.', sev:4 });
   if (liq === 0)
-    flags.push({ ic: '🔴', t: 'No Liquidity Found', tc: 'rd', d: 'No liquidity detected. This token cannot be traded or has already been fully rugged.', sev: 4 });
+    flags.push({ ic:'🚨', t:'No Liquidity Found', tc:'rd', d:'No liquidity detected. This token cannot be traded or has already been fully rugged.', sev:4 });
   if (sec?.mintAuth === 'RISK')
-    flags.push({ ic: '🔴', t: 'Mint Authority Active', tc: 'rd', d: 'Developer can print unlimited new tokens at any time and dump them on holders. Massive red flag.', sev: 3 });
+    flags.push({ ic:'🚨', t:'Mint Authority Active', tc:'rd', d:'Developer can print unlimited new tokens at any time and dump them on holders. Massive red flag.', sev:3 });
   if (sec?.freezeAuth === 'RISK')
-    flags.push({ ic: '🔴', t: 'Freeze Authority Active', tc: 'rd', d: 'Developer can freeze your wallet and prevent you from moving or selling your tokens.', sev: 3 });
+    flags.push({ ic:'🚨', t:'Freeze Authority Active', tc:'rd', d:'Developer can freeze your wallet and prevent you from moving or selling your tokens.', sev:3 });
   if (sec?.isBlacklisted === 'RISK')
-    flags.push({ ic: '🔴', t: 'Blacklist Function Detected', tc: 'rd', d: 'Developer can blacklist specific wallets, permanently blocking them from selling.', sev: 3 });
+    flags.push({ ic:'🚨', t:'Blacklist Function Detected', tc:'rd', d:'Developer can blacklist specific wallets, permanently blocking them from selling.', sev:3 });
   if (sec?.transferPausable === 'RISK')
-    flags.push({ ic: '🔴', t: 'Transfer Pausable', tc: 'rd', d: 'Developer can pause all token transfers. Nobody can buy, sell, or move tokens when paused.', sev: 3 });
+    flags.push({ ic:'🚨', t:'Transfer Pausable', tc:'rd', d:'Developer can pause all token transfers. Nobody can buy, sell, or move tokens when paused.', sev:3 });
   if (sec?.hiddenOwner === 'RISK')
-    flags.push({ ic: '🔴', t: 'Hidden Owner Detected', tc: 'rd', d: 'Contract has a hidden owner with anonymous control. Identity is concealed on purpose.', sev: 3 });
+    flags.push({ ic:'🚨', t:'Hidden Owner Detected', tc:'rd', d:'Contract has a hidden owner with anonymous control. Identity is concealed on purpose.', sev:3 });
   if (sec?.canTakeBack === 'RISK')
-    flags.push({ ic: '🔴', t: 'Owner Can Reclaim Contract', tc: 'rd', d: 'Previous owner can take back full control of this contract at any time.', sev: 3 });
+    flags.push({ ic:'🚨', t:'Owner Can Reclaim Contract', tc:'rd', d:'Previous owner can take back full control of this contract at any time.', sev:3 });
   if (creatorPct !== null && creatorPct > 10)
-    flags.push({ ic: '🔴', t: `Dev Holds ${creatorPct}% of Supply`, tc: 'rd', d: `Creator wallet controls ${creatorPct}% of total supply. One sell from dev can crash the price.`, sev: 3 });
+    flags.push({ ic:'🚨', t:`Dev Holds ${creatorPct}% of Supply`, tc:'rd', d:`Creator wallet controls ${creatorPct}% of total supply. One sell from dev can crash the price.`, sev:3 });
   if (top10 !== null && top10 > 80)
-    flags.push({ ic: '🔴', t: `Top 10 Wallets Hold ${top10}% of Supply`, tc: 'rd', d: `Extreme concentration. 10 wallets control ${top10}% of supply. Coordinated dump can wipe the chart.`, sev: 3 });
+    flags.push({ ic:'🚨', t:`Top 10 Wallets Hold ${top10}% of Supply`, tc:'rd', d:`Extreme concentration. 10 wallets control ${top10}% of supply. Coordinated dump can wipe the chart.`, sev:3 });
   if (liq > 0 && liq < 2000)
-    flags.push({ ic: '🔴', t: `Critically Low Liquidity ($${f(liq)})`, tc: 'rd', d: `Only $${f(liq)} in liquidity. A single medium sell will crash the price instantly.`, sev: 3 });
+    flags.push({ ic:'🚨', t:`Critically Low Liquidity ($${ f(liq) })`, tc:'rd', d:`Only $${ f(liq) } in liquidity. A single medium sell will crash the price instantly.`, sev:3 });
 
   // RUG EXIT RISK FLAG
   if (liq > 0 && mcap > 0) {
     const rugRatio = (liq / mcap) * 100;
     if (rugRatio < 1 && vol > 100)
-      flags.push({ ic: '🔴', t: `Rug Exit Risk — ${rugRatio.toFixed(2)}% Liq/MCap`, tc: 'rd', d: `Only ${rugRatio.toFixed(2)}% of the market cap sits in the liquidity pool. In plain terms: insiders holding large bags can dump everything and still get a decent exit price. You — a smaller holder — will be left with massive slippage or no exit at all.`, sev: 3 });
+      flags.push({ ic:'🚨', t:`Rug Exit Risk – ${ rugRatio.toFixed(2) }% Liq/MCap`, tc:'rd', d:`Only ${ rugRatio.toFixed(2) }% of the market cap sits in the liquidity pool. In plain terms: insiders holding large bags can dump everything and still get a decent exit price. You – a smaller holder – will be left with massive slippage or no exit at all.`, sev:3 });
     else if (rugRatio < 3 && vol > 100)
-      flags.push({ ic: '🟡', t: `Low Rug Buffer — ${rugRatio.toFixed(1)}% Liq/MCap`, tc: 'yl', d: `${rugRatio.toFixed(1)}% liq/mcap means the liquidity cushion is thin. Big wallet holders can exit faster than you. If whales sell, the price drops sharply before you can react.`, sev: 2 });
+      flags.push({ ic:'🟡', t:`Low Rug Buffer – ${ rugRatio.toFixed(1) }% Liq/MCap`, tc:'yl', d:`${ rugRatio.toFixed(1) }% liq/mcap means the liquidity cushion is thin. Big wallet holders can exit faster than you. If whales sell, the price drops sharply before you can react.`, sev:2 });
   }
 
   // WARNINGS
   const st = sec?.sellTax ? parseFloat(sec.sellTax) : 0;
   if (st > 10)
-    flags.push({ ic: '🟡', t: `High Sell Tax (${sec.sellTax})`, tc: 'yl', d: `You lose ${sec.sellTax} every time you sell. This is designed to punish sellers and trap liquidity.`, sev: 2 });
+    flags.push({ ic:'🟡', t:`High Sell Tax (${ sec.sellTax }%)`, tc:'yl', d:`You lose ${ sec.sellTax }% every time you sell. This is designed to punish sellers and trap liquidity.`, sev:2 });
   else if (st > 5)
-    flags.push({ ic: '🟡', t: `Elevated Sell Tax (${sec.sellTax})`, tc: 'yl', d: `Sell tax of ${sec.sellTax} is above normal. Factor this into your exit strategy.`, sev: 2 });
+    flags.push({ ic:'🟡', t:`Elevated Sell Tax (${ sec.sellTax }%)`, tc:'yl', d:`Sell tax of ${ sec.sellTax }% is above normal. Factor this into your exit strategy.`, sev:2 });
   if (sec?.isProxy === 'yes')
-    flags.push({ ic: '🟡', t: 'Proxy / Upgradeable Contract', tc: 'yl', d: 'Contract logic can be changed after deployment. Rules you see today may not apply tomorrow.', sev: 2 });
+    flags.push({ ic:'🟡', t:'Proxy / Upgradeable Contract', tc:'yl', d:'Contract logic can be changed after deployment. Rules you see today may not apply tomorrow.', sev:2 });
   if (top10 !== null && top10 > 60 && top10 <= 80)
-    flags.push({ ic: '🟡', t: `Top 10 Hold ${top10}% — High Concentration`, tc: 'yl', d: `Top 10 wallets control ${top10}% of supply. Whale movements can heavily impact price.`, sev: 2 });
+    flags.push({ ic:'🟡', t:`Top 10 Hold ${ top10 }% – High Concentration`, tc:'yl', d:`Top 10 wallets control ${ top10 }% of supply. Whale movements can heavily impact price.`, sev:2 });
   if (creatorPct !== null && creatorPct > 5 && creatorPct <= 10)
-    flags.push({ ic: '🟡', t: `Dev Holds ${creatorPct}% of Supply`, tc: 'yl', d: `Creator wallet holds ${creatorPct}% of supply. Monitor dev wallet closely for sell activity.`, sev: 2 });
+    flags.push({ ic:'🟡', t:`Dev Holds ${ creatorPct }% of Supply`, tc:'yl', d:`Creator wallet holds ${ creatorPct }% of supply. Monitor dev wallet closely for sell activity.`, sev:2 });
   if (liq > 0 && liq < 10000 && liq >= 2000)
-    flags.push({ ic: '🟡', t: `Low Liquidity ($${f(liq)})`, tc: 'yl', d: `$${f(liq)} is low for a trading token. Large sells will significantly move the price.`, sev: 2 });
+    flags.push({ ic:'🟡', t:`Low Liquidity ($${ f(liq) })`, tc:'yl', d:`$${ f(liq) } is low for a trading token. Large sells will significantly move the price.`, sev:2 });
   if (age !== null && age < 1)
-    flags.push({ ic: '🟡', t: `Brand New Token (${dex.ageHours}h old)`, tc: 'yl', d: 'Token launched less than 24 hours ago. No track record whatsoever. Extreme risk.', sev: 2 });
+    flags.push({ ic:'🟡', t:`Brand New Token (${ dex.ageHours }h old)`, tc:'yl', d:`Token launched less than 24 hours ago. No track record whatsoever. Extreme risk.`, sev:2 });
   else if (age !== null && age < 3)
-    flags.push({ ic: '🟡', t: `Very New Token (${age}d old)`, tc: 'yl', d: 'Token is under 3 days old. High risk. No proven stability or legitimate use case established.', sev: 2 });
+    flags.push({ ic:'🟡', t:`Very New Token (${ age }d old)`, tc:'yl', d:`Token is under 3 days old. No proven stability or legitimate use case established.`, sev:2 });
   if (buys > 0 && sells > 0 && (sells / (buys + sells)) > 0.75)
-    flags.push({ ic: '🟡', t: 'Heavy Sell Pressure', tc: 'yl', d: `${((sells / (buys + sells)) * 100).toFixed(0)}% of transactions are sells. More people are exiting than entering.`, sev: 2 });
-  if (vol < 50 && liq > 0 && (buys > 0 || sells > 0))
-    flags.push({ ic: '🟡', t: `Extremely Low Volume ($${f(vol)})`, tc: 'yl', d: 'Near-zero trading volume indicates low interest or a stalled token.', sev: 2 });
+    flags.push({ ic:'🟡', t:'Heavy Sell Pressure', tc:'yl', d:`${ ((sells / (buys + sells)) * 100).toFixed(0) }% of transactions are sells. Strong distribution signal.`, sev:2 });
   if (sec?.isOpenSource === 'no')
-    flags.push({ ic: '🟡', t: 'Contract Not Verified / Open Source', tc: 'yl', d: 'Source code is not publicly verified. Cannot audit what the contract actually does.', sev: 2 });
+    flags.push({ ic:'🟡', t:'Contract Not Verified / Open Source', tc:'yl', d:'Source code is not publicly verified. Cannot audit what the contract actually does.', sev:2 });
   if (mcap > 0 && mcap < 5000)
-    flags.push({ ic: '🟡', t: `Micro Cap ($${f(mcap)})`, tc: 'yl', d: 'Market cap under $5K. One medium sell can wipe this entirely.', sev: 2 });
+    flags.push({ ic:'🟡', t:`Micro Cap ($$${ f(mcap) })`, tc:'yl', d:`Market cap under $5K. One medium sell can wipe this entirely.`, sev:2 });
 
   // POSITIVE FLAGS
   if (sec?.mintAuth === 'safe')
-    flags.push({ ic: '✅', t: 'Mint Authority Revoked', tc: 'gr', d: 'Developer cannot create new tokens. Total supply is permanently fixed.', sev: 0 });
+    flags.push({ ic:'✅', t:'Mint Authority Revoked', tc:'gr', d:'Developer cannot create new tokens. Total supply is permanently fixed.', sev:0 });
   if (sec?.freezeAuth === 'safe')
-    flags.push({ ic: '✅', t: 'Freeze Authority Disabled', tc: 'gr', d: 'Developer cannot freeze your wallet or tokens.', sev: 0 });
+    flags.push({ ic:'✅', t:'Freeze Authority Disabled', tc:'gr', d:'Developer cannot freeze your wallet or tokens.', sev:0 });
   if (sec?.honeypot === 'none')
-    flags.push({ ic: '✅', t: 'No Honeypot Detected', tc: 'gr', d: 'You can buy and sell freely. No sell restriction found.', sev: 0 });
+    flags.push({ ic:'✅', t:'No Honeypot Detected', tc:'gr', d:'You can buy and sell freely. No sell restriction found.', sev:0 });
   if (liq > 50000)
-    flags.push({ ic: '✅', t: `Strong Liquidity ($${f(liq)})`, tc: 'gr', d: 'Healthy liquidity pool. Difficult to manipulate price with single trades.', sev: 0 });
-  if (age !== null && age > 30)
-    flags.push({ ic: '✅', t: `Established Token (${age}d old)`, tc: 'gr', d: 'Token has survived over a month. Reduced chance of a quick rug.', sev: 0 });
+    flags.push({ ic:'✅', t:`Strong Liquidity ($$${ f(liq) })`, tc:'gr', d:'Healthy liquidity pool. Difficult to manipulate price with single trades.', sev:0 });
+  if (age !== null && age >= 30)
+    flags.push({ ic:'✅', t:`Established Token (${ age }d old)`, tc:'gr', d:'Token has survived over a month. Reduced chance of a quick rug.', sev:0 });
   if (top10 !== null && top10 < 30)
-    flags.push({ ic: '✅', t: `Well Distributed (Top 10 = ${top10}%)`, tc: 'gr', d: 'Supply is spread across many holders. Reduced whale manipulation risk.', sev: 0 });
+    flags.push({ ic:'✅', t:`Well Distributed (Top 10 = ${ top10 }%)`, tc:'gr', d:'Supply is spread across many holders. Reduced whale manipulation risk.', sev:0 });
   if (dex?.dexPaid)
-    flags.push({ ic: '✅', t: 'DEX Screener Boost Active', tc: 'gr', d: 'Team paid to promote this token on DexScreener. Shows some financial commitment.', sev: 0 });
+    flags.push({ ic:'✅', t:'DEX Screener Boost Active', tc:'gr', d:'Team paid to promote this token on DexScreener. Shows some financial commitment.', sev:0 });
   if (dex?.socials?.twitter)
-    flags.push({ ic: '✅', t: 'Twitter / X Account Linked', tc: 'gr', d: 'Project has a linked Twitter account. Adds some accountability.', sev: 0 });
+    flags.push({ ic:'✅', t:'Twitter / X Account Linked', tc:'gr', d:'Project has a linked Twitter account. Adds some accountability.', sev:0 });
   if (dex?.socials?.telegram)
-    flags.push({ ic: '✅', t: 'Telegram Community Linked', tc: 'gr', d: 'Project has a Telegram community. Community presence is a positive signal.', sev: 0 });
+    flags.push({ ic:'✅', t:'Telegram Community Linked', tc:'gr', d:'Project has a Telegram community. Community presence is a positive signal.', sev:0 });
 
   if (!flags.length)
-    flags.push({ ic: '🔍', t: 'Limited Data Available', tc: 'mu', d: 'Security data could not be retrieved. Check manually on DexScreener and GoPlus before trading.', sev: 1 });
+    flags.push({ ic:'🔍', t:'Limited Data Available', tc:'mu', d:'Security data could not be retrieved. Check manually on DexScreener and GoPlus before trading.', sev:1 });
 
-  return flags.sort((a, b) => b.sev - a.sev);
+  return flags.sort((a,b) => b.sev - a.sev);
 }
 
+// ── render ─────────────────────────────────────────────────────────────────
 function render() {
   hideLoad();
   const { ca, dex, sec, sc, flags, chain: ch } = S;
 
   // Verdict
   const vcEl = document.getElementById('vc');
-  vcEl.className = `vc ${sc.cls}`;
+  vcEl.className = `vc ${ sc.cls }`;
   document.getElementById('vnum').textContent = sc.score;
-  document.getElementById('vt').textContent = sc.verdict; const aiEl = document.getElementById('aiverdict'); if (aiEl) { aiEl.textContent = S.ai || ''; aiEl.style.display = S.ai ? 'block' : 'none'; }
-  document.getElementById('vs').textContent = { safe: 'no major red flags detected', caution: 'some risks present — dyor before aping', danger: 'significant risks detected — avoid' }[sc.cls];
+  document.getElementById('vt').textContent   = sc.verdict;
+  const aiEl = document.getElementById('aivt');
+  if (aiEl) { aiEl.style.display = S.ai || '' ? 'block' : 'none'; }
+  document.getElementById('vs').textContent = { safe:'no major red flags detected', caution:'some risks present – dyor before aping', danger:'significant risks detected – avoid' }[sc.cls];
 
-  const sym = dex?.symbol || ca.slice(0, 8);
-  document.getElementById('tsym').textContent = `$${sym}`;
-  const tl = document.getElementById('tlogo'); if (dex?.logo) { tl.src = dex.logo; tl.style.display = 'block'; } else { tl.src = ''; tl.style.display = 'none'; }
-  if (dex?.dexPaid) document.getElementById('dexpaid').style.display = 'inline';
+  const sym = dex?.symbol || ca.slice(0,8);
+  document.getElementById('tsym').textContent = `$${ sym }`;
+  const tl = document.getElementById('tlogo');
+  if (dex?.logo) { tl.src = dex.logo; tl.style.display = 'block'; } else { tl.style.display = 'none'; }
+  if (dex?.dexPaid) document.getElementById('dpaid').style.display = 'inline';
 
-  const cmap = { solana: { l: 'SOL', c: 'sol' }, Ethereum: { l: 'ETH', c: 'eth' }, BSC: { l: 'BSC', c: 'bsc' }, Base: { l: 'BASE', c: 'base' }, Polygon: { l: 'MATIC', c: 'matic' }, Arbitrum: { l: 'ARB', c: 'arb' }, Avalanche: { l: 'AVAX', c: 'avax' }, Optimism: { l: 'OP', c: 'arb' } };
-  const ci = cmap[sec?.chain] || (ch === 'sol' ? { l: 'SOL', c: 'sol' } : { l: 'EVM', c: 'other' });
-  const cbl = document.getElementById('cbl'); cbl.textContent = ci.l; cbl.className = `cbl ${ci.c}`;
-  if (dex?.dex) document.getElementById('dxl').textContent = `via ${dex.dex}`;
+  const cmap = { solana:{l:'SOL',c:'sol'}, Ethereum:{l:'ETH',c:'eth'}, BSC:{l:'BSC',c:'bsc'}, BASE:{l:'BASE',c:'base'}, Polygon:{l:'MATIC',c:'matic'}, Arbitrum:{l:'ARB',c:'arb'}, Avalanche:{l:'AVAX',c:'avax'}, Optimism:{l:'OP',c:'op'} };
+  const ci = cmap[sec?.chain] || (ch === 'sol' ? {l:'SOL',c:'sol'} : {l:'EVM',c:'other'});
+  const cbl = document.getElementById('cbl');
+  cbl.textContent = ci.l; cbl.className = `cbl ${ ci.c }`;
+  if (dex?.dex) document.getElementById('dxl').textContent = `via ${ dex.dex }`;
 
-  // Smart Wallets
+  // Smart wallets
   if (S.smartWallets && S.smartWallets.count > 0) {
     const sw = S.smartWallets;
-    const swEl = document.getElementById('smartWalletBar');
+    const swEl = document.getElementById('swb');
     if (swEl) {
       swEl.style.display = 'flex';
       document.getElementById('swCount').textContent = sw.count + ' known smart wallet' + (sw.count > 1 ? 's' : '') + ' bought this in the last 6h';
@@ -678,45 +775,49 @@ function render() {
   const hasLinks = soc?.twitter || soc?.telegram || soc?.website || dex?.pairUrl;
   if (hasLinks) {
     document.getElementById('socialsBar').style.display = 'flex';
-    if (soc?.twitter) { const a = document.getElementById('lkX'); a.href = soc.twitter; a.style.display = 'inline'; }
-    if (soc?.telegram) { const a = document.getElementById('lkTg'); a.href = soc.telegram; a.style.display = 'inline'; }
-    if (soc?.website) { const a = document.getElementById('lkWeb'); a.href = soc.website; a.style.display = 'inline'; }
-    if (dex?.pairUrl) { const a = document.getElementById('lkChart'); a.href = dex.pairUrl; a.style.display = 'inline'; }
+    if (soc?.twitter)  { const a = document.getElementById('lkX');    a.href = soc.twitter;   a.style.display = 'inline'; }
+    if (soc?.telegram) { const a = document.getElementById('lkTg');   a.href = soc.telegram;  a.style.display = 'inline'; }
+    if (soc?.website)  { const a = document.getElementById('lkWeb');  a.href = soc.website;   a.style.display = 'inline'; }
+    if (dex?.pairUrl)  { const a = document.getElementById('lkChart');a.href = dex.pairUrl;   a.style.display = 'inline'; }
   }
 
   // Flags
-  document.getElementById('flagsEl').innerHTML = flags.map(fl => `
-    <div class="flag">
-      <div class="fic">${fl.ic}</div>
+  document.getElementById('flagsEl').innerHTML = flags.map(fl =>
+    `<div class="flag ${ fl.tc }">
+      <div class="fic">${ fl.ic }</div>
       <div class="fb">
-        <div class="ft ${fl.tc}">${fl.t}</div>
-        <div class="fd">${fl.d}</div>
+        <div class="ft ${ fl.tc }">${ fl.t }</div>
+        <div class="fd">${ fl.d }</div>
       </div>
-    </div>`).join('');
+    </div>`
+  ).join('');
 
   // Market
-  const liq = dex?.liquidity ?? 0, mcap = dex?.mcap ?? 0, vol = dex?.volume24h ?? 0;
-  set('mP', dex?.price ? `$${dex.price < 0.000001 ? dex.price.toExponential(3) : dex.price < 0.01 ? dex.price.toFixed(8) : dex.price.toFixed(4)}` : 'n/a');
-  set('mM', mcap ? `$${f(mcap)}` : 'n/a');
-  if (mcap) bdg('mMf', mcap > 1e6 ? 's' : mcap > 100000 ? 'w' : 'd', mcap > 1e6 ? 'large' : mcap > 100000 ? 'small' : 'micro');
-  set('mL', liq ? `$${f(liq)}` : '⚠ NONE');
-  bdg('mLf', liq > 50000 ? 's' : liq > 10000 ? 'w' : liq > 0 ? 'd' : 'd', liq > 50000 ? 'ok' : liq > 10000 ? 'low' : liq > 0 ? 'very low' : 'DANGER');
-  if (liq > 0 && mcap > 0) { const r = ((liq / mcap) * 100).toFixed(1); set('mR', `${r}%`); bdg('mRf', r < 1 ? 'd' : r < 3 ? 'w' : 's', r < 1 ? 'DANGER' : r < 3 ? 'low buffer' : 'healthy'); } else set('mR', 'n/a');
-  set('mV', vol ? `$${f(vol)}` : 'n/a');
-  if (vol > 0) bdg('mVf', vol > 10000 ? 's' : vol > 500 ? 'w' : 'd', vol > 10000 ? 'active' : vol > 500 ? 'low' : 'very low');
+  const liq  = dex?.liquidity ?? 0;
+  const mcap = dex?.mcap ?? 0;
+  const vol  = dex?.volume24h ?? 0;
+  set('mP',  dex?.price ? `$${ dex.price < 0.000001 ? dex.price.toExponential(3) : dex.price < 0.01 ? dex.price.toFixed(8) : dex.price.toFixed(4) }` : 'n/a');
+  set('mM',  mcap ? `$${ f(mcap) }` : 'n/a');
+  if (mcap) bdg('mMF', mcap > 1e6 ? 's' : mcap > 100000 ? 'w' : 'd', mcap > 1e6 ? 'large' : mcap > 1e5 ? 'mid' : 'micro');
+  set('mL',  liq > 0 ? `$${ f(liq) }` : 'NONE');
+  bdg('mLF', liq > 50000 ? 's' : liq > 10000 ? 'w' : 'd');
+  if (liq > 0 && mcap > 0) { const r = ((liq/mcap)*100).toFixed(1); set('mR', `${ r }%`); bdg('mRF', r < 1 ? 'DANGER' : r < 3 ? 'low buffer' : 'healthy'); } else set('mR','n/a');
+  set('mV',  vol ? `$${ f(vol) }` : 'n/a');
+  if (vol > 0) bdg('mVF', vol > 10000 ? 's' : vol > 500 ? 'w' : 'd', vol > 10000 ? 'active' : vol > 500 ? 'low' : 'very low');
   const cc = dex?.change24h;
   const ce = document.getElementById('mC');
-  if (cc != null) { ce.textContent = `${cc >= 0 ? '+' : ''}${parseFloat(cc).toFixed(2)}%`; ce.style.color = cc >= 0 ? 'var(--gr)' : 'var(--rd)'; } else ce.textContent = 'n/a';
-  const buys = dex?.buys24h ?? 0, sells = dex?.sells24h ?? 0;
+  if (cc !== null) { ce.textContent = `${ cc >= 0 ? '+' : '' }${ parseFloat(cc).toFixed(2) }%`; ce.style.color = cc >= 0 ? 'var(--ac)' : 'var(--dan)'; } else ce.textContent = 'n/a';
+  const buys  = dex?.buys24h  ?? 0;
+  const sells = dex?.sells24h ?? 0;
   const bsEl = document.getElementById('mBS');
-  bsEl.textContent = dex?.txns24h ? `${buys} buys / ${sells} sells` : 'n/a';
+  bsEl.textContent = dex?.txns24h ? `${ buys } buys / ${ sells } sells` : 'n/a';
   if (buys > 0 || sells > 0) {
     const sellRatio = sells / (buys + sells);
-    bsEl.style.color = sellRatio > 0.75 ? 'var(--rd)' : sellRatio > 0.6 ? 'var(--yl)' : 'var(--tx)';
+    bsEl.style.color = sellRatio > 0.75 ? 'var(--dan)' : sellRatio > 0.6 ? 'var(--yl)' : 'var(--tx)';
   }
   const ag = dex?.ageDays;
-  if (ag != null) { set('mA', ag < 1 ? `${dex.ageHours}h` : `${ag}d`); bdg('mAf', ag < 1 ? 'd' : ag < 3 ? 'w' : ag < 7 ? 'w' : 's', ag < 1 ? 'brand new' : ag < 3 ? 'very new' : ag < 7 ? 'new' : 'established'); } else set('mA', 'unknown');
-  set('mD', dex?.dex ? `${dex.dex}${dex.chainId ? ` (chain: ${dex.chainId})` : ''}` : 'n/a');
+  if (ag !== null) { set('mA', ag < 1 ? `${ dex.ageHours }h` : ag < 3 ? 'brand new' : ag < 7 ? 'very new' : ag < 7 ? 'new' : 'established'); } else set('mA','unknown');
+  set('mD', dex?.dex ? `${ dex.dex }${ dex.chainId ? ` (chain: ${ dex.chainId })` : '' }` : 'n/a');
   set('mH', sec?.holders ? sec.holders.toLocaleString() : 'n/a');
 
   // Holder concentration
@@ -724,29 +825,27 @@ function render() {
   const creatorPct = sec?.creatorPct ? parseFloat(sec.creatorPct) : null;
   if (top10 !== null || (sec?.topHolders && sec.topHolders.length > 0)) {
     document.getElementById('holderSec').style.display = 'block';
-    if (top10 !== null) {
-      const bar = document.getElementById('concBar');
-      bar.style.width = `${top10}%`;
-      bar.style.background = top10 > 80 ? 'var(--rd)' : top10 > 60 ? 'var(--yl)' : top10 > 40 ? 'var(--yl)' : 'var(--gr)';
-      document.getElementById('concPct').textContent = `Top 10 wallets: ${top10}% of supply`;
-      document.getElementById('concVerdict').textContent = top10 > 80 ? '🔴 extreme risk' : top10 > 60 ? '🟡 high concentration' : top10 > 40 ? '🟡 moderate' : '✅ well distributed';
-    }
+    const bar = document.getElementById('concBar');
+    bar.style.width = `${ top10 }%`;
+    bar.style.background = top10 > 80 ? 'var(--dan)' : top10 > 60 ? 'var(--warn)' : 'var(--ac)';
+    document.getElementById('concPct').textContent = `Top 10 Wallets: ${ top10 }% of supply`;
+    document.getElementById('concVerdict').textContent = top10 > 80 ? '🔴 extreme risk' : top10 > 60 ? '🟡 high concentration' : top10 > 40 ? '🟡 moderate' : '✅ well distributed';
     const holders = sec?.topHolders || [];
     if (holders.length > 0) {
-      document.getElementById('holdersEl').innerHTML = holders.slice(0, 10).map((h, i) => {
+      document.getElementById('holdersEl').innerHTML = holders.slice(0,10).map((h, i) => {
         const pct = h.percent ? (parseFloat(h.percent) * 100).toFixed(2) : h.pct || '?';
-        const addr = h.address || h.account || '—';
+        const addr = h.address || h.account || '–';
         const isCreator = addr === sec?.creatorAddress;
-        const isOwner = addr === sec?.ownerAddress;
+        const isOwner   = addr === sec?.ownerAddress;
         const isLp = h.is_locked || addr.toLowerCase().includes('pool');
         const pctNum = parseFloat(pct);
-        const barColor = pctNum > 20 ? 'var(--rd)' : pctNum > 10 ? 'var(--yl)' : 'var(--gr)';
-        const tag = isCreator ? '<span class="h-tag dev">DEV</span>' : isOwner ? '<span class="h-tag dev">OWNER</span>' : isLp ? '<span class="h-tag lp">LP</span>' : pctNum > 10 ? '<span class="h-tag whale">WHALE</span>' : '';
+        const barColor = pctNum > 20 ? 'var(--dan)' : pctNum > 10 ? 'var(--warn)' : 'var(--ac)';
+        const tag = isCreator ? `<span class="h-tag dev">DEV</span>` : isOwner ? `<span class="h-tag dev">OWNER</span>` : isLp ? `<span class="h-tag lp">LP</span>` : pctNum > 10 ? `<span class="h-tag whale">WHALE</span>` : '';
         return `<div class="holder-row">
-          <div class="h-rank">#${i + 1}</div>
-          <div class="h-addr">${addr.slice(0, 6)}...${addr.slice(-4)}${tag}</div>
-          <div class="h-bar-wrap"><div class="h-bar" style="width:${Math.min(100, pctNum * 5)}%;background:${barColor}"></div></div>
-          <div class="h-pct" style="color:${barColor}">${pct}%</div>
+          <div class="h-rank">#${ i+1 }</div>
+          <div class="h-addr">${ addr.slice(0,6) }...${ addr.slice(-4) }${ tag }</div>
+          <div class="h-bar-wrap"><div class="h-bar" style="width:${ Math.min(100, pctNum * 5) }%;background:${ barColor }"></div></div>
+          <div class="h-pct" style="color:${ barColor }">${ pct }%</div>
         </div>`;
       }).join('');
     }
@@ -754,10 +853,10 @@ function render() {
 
   // Contract security
   const secMap = {
-    fMint: { val: sec?.mintAuth, map: { RISK: ['d', 'ACTIVE — CAN MINT'], safe: ['s', 'REVOKED'], unknown: ['n', 'unverified'] } },
-    fFreeze: { val: sec?.freezeAuth, map: { RISK: ['d', 'ACTIVE — CAN FREEZE'], safe: ['s', 'DISABLED'], 'n/a': ['n', 'n/a (evm)'], unknown: ['n', 'unverified'] } },
-    fHoney: { val: sec?.honeypot, map: { DETECTED: ['d', 'HONEYPOT'], none: ['s', 'none detected'], 'n/a': ['n', 'n/a'], unknown: ['n', 'unverified'] } },
-    fClose: { val: sec?.closable, map: { yes: ['w', 'yes'], no: ['s', 'no'], 'n/a': ['n', 'n/a'], unknown: ['n', 'unverified'] } },
+    fMint:   { val: sec?.mintAuth,         map: { RISK:['d','ACTIVE – CAN MINT'], safe:['s','REVOKED'], unknown:['n','unverified'] } },
+    fFreeze: { val: sec?.freezeAuth,       map: { RISK:['d','ACTIVE – CAN FREEZE'], safe:['s','DISABLED'], 'n/a':['n','n/a (evm)'], unknown:['n','unverified'] } },
+    fHoney:  { val: sec?.honeypot,         map: { DETECTED:['d','HONEYPOT'], none:['s','none detected'], 'n/a':['n','n/a'], unknown:['n','unverified'] } },
+    fClose:  { val: sec?.closable,         map: { yes:['w','yes'], no:['s','no'], 'n/a':['n','n/a'], unknown:['n','unverified'] } },
   };
   for (const [id, cfg] of Object.entries(secMap)) {
     const el = document.getElementById(id);
@@ -766,97 +865,104 @@ function render() {
     const [cls, txt] = cfg.map[v] || ['n', v];
     el.innerHTML = bh(cls, txt);
   }
-
   const showRow = (rowId, elId, val, map) => {
     if (!val || val === 'unknown' || val === 'n/a') return;
     const row = document.getElementById(rowId);
-    if (row) row.style.display = 'flex';
+    row.style.display = 'flex';
     const el = document.getElementById(elId);
     if (!el) return;
     const [cls, txt] = map[val] || ['n', val];
     el.innerHTML = bh(cls, txt);
   };
-  showRow('rBuyTax', 'fBuyTax', sec?.buyTax, { 'unknown': ['n', '?'] });
+  showRow('rBuyTax','fBuyTax', sec?.buyTax, { unknown:['n','?'] });
   if (sec?.buyTax && sec.buyTax !== 'unknown') {
     document.getElementById('rBuyTax').style.display = 'flex';
     const bt = parseFloat(sec.buyTax);
-    document.getElementById('fBuyTax').innerHTML = bh(bt > 10 ? 'd' : bt > 5 ? 'w' : 's', sec.buyTax);
+    document.getElementById('fBuyTax').innerHTML = bh(bt > 10 ? 'd' : bt > 5 ? 'w' : 's', sec.buyTax + '%');
   }
   if (sec?.sellTax && sec.sellTax !== 'unknown') {
     document.getElementById('rSellTax').style.display = 'flex';
     const st2 = parseFloat(sec.sellTax);
-    document.getElementById('fSellTax').innerHTML = bh(st2 > 10 ? 'd' : st2 > 5 ? 'w' : 's', sec.sellTax);
+    document.getElementById('fSellTax').innerHTML = bh(st2 > 10 ? 'd' : st2 > 5 ? 'w' : 's', sec.sellTax + '%');
   }
-  if (sec?.hiddenOwner) { document.getElementById('rHidden').style.display = 'flex'; document.getElementById('fHidden').innerHTML = bh(sec.hiddenOwner === 'RISK' ? 'd' : 's', sec.hiddenOwner === 'RISK' ? 'YES — RISK' : 'no'); }
-  if (sec?.isBlacklisted) { document.getElementById('rBlacklist').style.display = 'flex'; document.getElementById('fBlacklist').innerHTML = bh(sec.isBlacklisted === 'RISK' ? 'd' : 's', sec.isBlacklisted === 'RISK' ? 'YES — RISK' : 'no'); }
-  if (sec?.transferPausable) { document.getElementById('rPause').style.display = 'flex'; document.getElementById('fPause').innerHTML = bh(sec.transferPausable === 'RISK' ? 'd' : 's', sec.transferPausable === 'RISK' ? 'YES — RISK' : 'no'); }
-  if (sec?.isProxy) { document.getElementById('rProxy').style.display = 'flex'; document.getElementById('fProxy').innerHTML = bh(sec.isProxy === 'yes' ? 'w' : 's', sec.isProxy); }
-  if (sec?.isOpenSource) { document.getElementById('rOpen').style.display = 'flex'; document.getElementById('fOpen').innerHTML = bh(sec.isOpenSource === 'yes' ? 's' : 'w', sec.isOpenSource); }
+  if (sec?.hiddenOwner)      { document.getElementById('rHidden').style.display   = 'flex'; document.getElementById('fHidden').innerHTML   = bh(sec.hiddenOwner   === 'RISK' ? 'd' : 's', sec.hiddenOwner   === 'RISK' ? 'YES – RISK' : 'no'); }
+  if (sec?.isBlacklisted)    { document.getElementById('rBlacklist').style.display = 'flex'; document.getElementById('fBlacklist').innerHTML = bh(sec.isBlacklisted === 'RISK' ? 'd' : 's', sec.isBlacklisted === 'RISK' ? 'YES – RISK' : 'no'); }
+  if (sec?.transferPausable) { document.getElementById('rPause').style.display    = 'flex'; document.getElementById('fPause').innerHTML    = bh(sec.transferPausable === 'RISK' ? 'd' : 's', sec.transferPausable === 'RISK' ? 'YES – RISK' : 'no'); }
+  if (sec?.isProxy)          { document.getElementById('rPProxy').style.display   = 'flex'; document.getElementById('fProxy').innerHTML    = bh(sec.isProxy === 'yes' ? 'w' : 's', sec.isProxy); }
+  if (sec?.isOpenSource)     { document.getElementById('rOpen').style.display     = 'flex'; document.getElementById('fOpen').innerHTML     = bh(sec.isOpenSource === 'yes' ? 's' : 'w', sec.isOpenSource); }
 
   // Score breakdown
-  document.getElementById('bdEl').innerHTML = sc.bd.map(i => `
-    <div class="bi">
-      <div class="bi-top">
-        <div class="bi-l">${i.l}</div>
-        <div class="bi-bw"><div class="bi-b" style="width:${i.p === 0 ? 100 : Math.max(5, 100 + i.p * 2)}%;background:${i.c}"></div></div>
-        <div class="bi-p" style="color:${i.p < 0 ? 'var(--rd)' : 'var(--gr)'}">${i.p === 0 ? '✓' : i.p}</div>
-      </div>
-      <div class="bi-n">${i.n}</div>
-    </div>`).join('');
+  document.getElementById('bdEl').innerHTML = sc.bd.map(i =>
+    `<div class="bi">
+      <span class="bi-l">${ i.l }</span>
+      <div class="bi-bw"><div class="bi-b" style="width:${ i.p === 0 ? 0 : Math.max(5, 100 + i.p * 2) }%;background:${ i.p < 0 ? 'var(--dan)' : 'var(--ac)' }"></div></div>
+      <span class="bi-p" style="color:${ i.p < 0 ? 'var(--dan)' : 'var(--ac)' }">${ i.p === 0 ? '✓' : i.p }</span>
+      <span class="bi-n">${ i.n }</span>
+    </div>`
+  ).join('');
 
   document.getElementById('ft').textContent = new Date().toLocaleTimeString();
   document.getElementById('res').classList.add('show');
+
+  // Action links
+  document.getElementById('aDex').href  = `https://dexscreener.com/solana/${ ca }`;
+  document.getElementById('aSol').href  = `https://solscan.io/token/${ ca }`;
+  document.getElementById('aBird').href = `https://birdeye.so/token/${ ca }`;
+  document.getElementById('aGop').href  = `https://app.goplus.xyz/token/solana/${ ca }`;
 }
 
-// SHARE ON X
+// ── shareX ─────────────────────────────────────────────────────────────────
 function shareX() {
-  const sym = document.getElementById('tsym').textContent;
+  const sym    = document.getElementById('tsym').textContent;
   const { dex, sec, score: sc, flags, ca } = S;
-  const riskLabel = sc.cls === 'safe' ? 'LOW 🟢' : sc.cls === 'caution' ? 'MEDIUM 🟡' : 'HIGH 🔴';
-  const topFlags = flags.filter(fl => fl.sev >= 3).slice(0, 3).map(fl => `${fl.ic} ${fl.t}`).join('\n');
-  const top10 = sec?.top10HolderPct ? `\ntop 10 holders: ${sec.top10HolderPct}%` : '';
-  const devHold = sec?.creatorPct ? `\ndev holdings: ${sec.creatorPct}%` : '';
-  const tweet = `just checked ${sym} on #TrenchReads\n\nRisk: ${riskLabel} (${sc.score}/100)\n\n${topFlags || '✅ no critical flags'}\n\nliquidity: $${f(dex?.liquidity || 0)}\nmcap: $${f(dex?.mcap || 0)}\nage: ${dex?.ageDays != null ? dex.ageDays + 'd' : '?'}${top10}${devHold}\n\nca: ${ca.slice(0, 8)}...${ca.slice(-4)}\n\nchecked onchain not on vibes — @TrenchReads_io`;
-  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
+  const riskLabel = sc.cls === 'safe' ? '🟢 LOW' : sc.cls === 'caution' ? '🟡 MEDIUM ⚠' : '🔴 HIGH 🚨';
+  const topFlags = flags.filter(fl => fl.sev >= 3).slice(0,3).map(fl => `${ fl.ic } ${ fl.t }`).join('\n');
+  const top10 = sec?.top10HolderPct ? `\ntop 10 holders: ${ sec.top10HolderPct }%` : '';
+  const devHold = sec?.creatorPct ? `\ndev wallet: ${ sec.creatorPct }% of supply` : '';
+  const tweet = `just checked ${ sym } on #TrenchReads\n\nRisk: ${ riskLabel } (${ (sc.score/100).toFixed(2) })\n\nmcap: $${ f(dex?.mcap || 0) }\nliquidity: $${ f(dex?.liquidity || 0) }\n24h liq/mcap: ${ dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2) : '?' }%\n...${ ca.slice(-4) }${ dex?.ageDays !== null ? `\nage: ${ dex.ageDays }d` : '' }${top10}${devHold}\n\nnca: ${ ca.slice(0,8) }\n\nchecked onchain not on vibes – @TrenchReads_io`;
+  window.open(`https://twitter.com/intent/tweet?text=${ encodeURIComponent(tweet) }`, '_blank');
 }
 
-// COPY VERDICT
+// ── copyIt ─────────────────────────────────────────────────────────────────
 function copyIt() {
-  const sym = document.getElementById('tsym').textContent;
+  const sym    = document.getElementById('tsym').textContent;
   const { dex, sec, score: sc, flags, ca } = S;
-  const allFlags = flags.map(fl => `${fl.p < 0 ? '🔴' : '✅'} ${fl.t}\n  ${fl.d}`).join('\n\n');
-  const holders = sec?.top10HolderPct ? `\ntop 10 holders: ${sec.top10HolderPct}% of supply` : '';
-  const dev = sec?.creatorPct ? `\ndev wallet: ${sec.creatorPct}% of supply` : '';
+  const allFlags = flags.map(fl => `${ fl.ic } : ${ fl.t }\n${ fl.d }`).join('\n\n');
+  const holders = sec?.top10HolderPct ? `\ntop 10 holders: ${ sec.top10HolderPct }% of supply` : '';
+  const dev = sec?.creatorPct ? `\ndev wallet: ${ sec.creatorPct }% of supply` : '';
   const licRatio = dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2) : null;
-const licWarning = licRatio && parseFloat(licRatio) < 1 ? `⚠️ DANGER: Liq/MCap only ${licRatio}% — insiders can dump with almost no resistance` : '';
-const txt = `#TrenchReads — ${sym}\n\nRISK SCORE: ${sc.score}/100\nVERDICT: ${sc.verdict}${licWarning ? "\n\n⚠️ " + licWarning : ""}\n\nFLAGS:\n${allFlags}\n\nMARKET:\nliquidity: $${f(dex?.liquidity || 0)}\nmcap: $${f(dex?.mcap || 0)}\n24h liq/mcap: ${dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2)+"%" : "unknown"}\nvol: $${f(dex?.volume24h || 0)}\nage: ${dex?.ageDays != null ? dex.ageDays + 'd' : '?'}${holders}${dev}\n\nCA: ${ca}\n\nchecked onchain not on vibes — TrenchReads`;
+  const licWarning = licRatio && parseFloat(licRatio) < 1 ? `\n⚠ DANGER: Liq/MCap only ${ licRatio }% – insiders can dump with almost no resistance` : '';
+  const txt = `#TrenchReads – ${ sym }\nRISK SCORE: ${ sc.score }/100\nVERDICT: ${ sc.verdict }${ licWarning }\n\nFLAGS:\n${ allFlags }\n\nMARKET:\nliquidity: $${ f(dex?.liquidity || 0) }\nliq/mcap: ${ dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2) : 'unknown' }%\nvol: $${ f(dex?.volume24h || 0) }\nnage: ${ dex?.ageDays !== null ? dex.ageDays + 'd' : '?' }${ holders }${ dev }\nnca: ${ ca }\n\nchecked onchain not on vibes – @TrenchReads_io`;
   navigator.clipboard.writeText(txt).then(() => {
-    const b = document.getElementById('cpb'); b.textContent = '✓ copied!'; b.classList.add('done');
+    const b = document.getElementById('cpBtn'); b.textContent = '✓ copied!'; b.classList.add('done');
     setTimeout(() => { b.textContent = '→ copy verdict'; b.classList.remove('done'); }, 2000);
   });
 }
 
-// HELPERS
-function set(id, v) { const e = document.getElementById(id); if (e) e.textContent = v; }
-function bh(c, t) { return `<span class="b ${c}">${t}</span>`; }
+// ── Helpers ────────────────────────────────────────────────────────────────
+function set(id, v)    { const e = document.getElementById(id); if (e) e.textContent = v; }
+function bh(c, t)      { return `<span class="bh ${ c }">${ t }</span>`; }
 function bdg(id, c, t) { const e = document.getElementById(id); if (e) e.innerHTML = bh(c, t); }
-function f(n) { if (!n || isNaN(n)) return '0'; if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B'; if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K'; return Number(n).toFixed(0); }
-function showLoad() { document.getElementById('load').classList.add('show'); document.getElementById('res').classList.remove('show'); document.getElementById('goBtn').disabled = true; ['s1', 's2', 's3', 's4'].forEach(id => { document.getElementById(id).className = 'ss-i'; }); }
-function hideLoad() { document.getElementById('load').classList.remove('show'); document.getElementById('goBtn').disabled = false; }
-function stp(n, st) { document.getElementById(`s${n}`).className = `ss-i ${st}`; }
-function reset() {
+function f(n) { if (!n || isNaN(n)) return '0'; if (n >= 1e9) return (n/1e9).toFixed(2) + 'B'; if (n >= 1e6) return (n/1e6).toFixed(2) + 'M'; if (n >= 1e3) return (n/1e3).toFixed(1) + 'K'; return Number(n).toFixed(2); }
+
+function clearRes() {
   document.getElementById('res').classList.remove('show');
-  document.getElementById('ca').value = '';
+  document.getElementById('res').style.display = 'none';
+  ['flagsEl','mktEl','holdersEl','bdEl','mBS'].forEach(id => { const e = document.getElementById(id); if(e) e.innerHTML = ''; });
+  ['lkX','lkTg','lkWeb','lkChart','swb','holderSec'].forEach(id => { const e = document.getElementById(id); if(e) e.style.display = 'none'; });
   document.getElementById('socialsBar').style.display = 'none';
-  document.getElementById('holderSec').style.display = 'none';
-  document.getElementById('dexpaid').style.display = 'none';
-  ['rBuyTax','rSellTax','rHidden','rBlacklist','rPause','rProxy','rOpen'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
-  document.getElementById('ca').focus();
-  clearErr();
+  ['rBuyTax','rSellTax','rHidden','rBlacklist','rPause','rPProxy','rOpen'].forEach(id => { const e = document.getElementById(id); if(e) e.style.display = 'none'; });
+  document.getElementById('vc').className = 'vc';
 }
-function setErr(m) { const b = document.getElementById('eb'); b.textContent = '⚠ ' + m; b.classList.add('show'); }
-function clearErr() { document.getElementById('eb').classList.remove('show'); }
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function showErr(msg) {
+  const eb = document.getElementById('eb');
+  if (!msg) { eb.style.display = 'none'; return; }
+  document.getElementById('em').textContent = msg;
+  eb.style.display = 'block';
+}
+
+// Allow Enter on CA input
+document.getElementById('ca').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
 </script>
 </body>
 </html>

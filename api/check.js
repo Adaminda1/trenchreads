@@ -1,226 +1,144 @@
-const SMART_WALLETS = [
-  '5H8phzFu9jTEmcDj2MDeyHcyvMmRY1UwPonqKbFNiiNG',
-  'GengvgZJ9gwFBmuXsmTFroX66xdXJH7T5nrU9yboVeXi',
-  'GhA8SoXSYieW9pdiftRdbf1LF1HZpApMDUgPzVKrySWe'
-];
+import { setupDB, validateKey, checkFreeLimit } from './db.js';
 
-function detectChain(a) {
-  if (/^0x[a-fA-F0-9]{40}$/.test(a)) return 'evm';
-  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return 'solana';
-  return 'unknown';
+function detectChain(address) {
+  if (/^0x[a-fA-F0-9]{40}$/.test(address)) return 'evm';
+  return 'solana';
 }
 
 async function dex(address) {
-  const r = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${address}`);
-  const data = await r.json();
-  if (!data?.pairs?.length) return null;
-  const pairs = data.pairs.sort((a,b) => (b.liquidity?.usd||0) - (a.liquidity?.usd||0));
-  const p = pairs[0];
-  const created = p.pairCreatedAt ? new Date(p.pairCreatedAt) : null;
-  const ageMs = created ? Date.now() - created.getTime() : null;
+  const chain = detectChain(address);
+  const chainSlug = chain === 'evm' ? 'ethereum' : 'solana';
+  const url = `https://api.dexscreener.com/latest/dex/tokens/${address}`;
+  const r = await fetch(url);
+  const j = await r.json();
+  const pair = j?.pairs?.[0];
+  if (!pair) return null;
   return {
-    name: p.baseToken?.name || address.slice(0,8),
-    symbol: p.baseToken?.symbol || '???',
-    logo: p.info?.imageUrl || null,
-    price: p.priceUsd ? parseFloat(p.priceUsd) : null,
-    mcap: p.marketCap || p.fdv || null,
-    liquidity: p.liquidity?.usd || 0,
-    volume24h: p.volume?.h24 || 0,
-    change24h: p.priceChange?.h24 || null,
-    txns24h: (p.txns?.h24?.buys||0) + (p.txns?.h24?.sells||0),
-    buys24h: p.txns?.h24?.buys || 0,
-    sells24h: p.txns?.h24?.sells || 0,
-    ageDays: ageMs ? Math.floor(ageMs/86400000) : null,
-    ageHours: ageMs ? Math.floor(ageMs/3600000) : null,
-    dex: p.dexId || 'unknown',
-    chainId: p.chainId || 'unknown',
-    websites: p.info?.websites || [],
-    socials: p.info?.socials || [],
+    name: pair.baseToken?.name,
+    symbol: pair.baseToken?.symbol,
+    price: pair.priceUsd,
+    liquidity: pair.liquidity?.usd,
+    volume24h: pair.volume?.h24,
+    priceChange24h: pair.priceChange?.h24,
+    txns24h: pair.txns?.h24,
+    marketCap: pair.marketCap,
+    fdv: pair.fdv,
+    pairAddress: pair.pairAddress,
+    dexId: pair.dexId,
+    createdAt: pair.pairCreatedAt,
+    url: pair.url,
+    chainId: pair.chainId,
   };
 }
 
 async function secSol(address) {
-  const r = await fetch(`https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=${address}`);
-  const data = await r.json();
-  if (!data?.result) return null;
-  const td = data.result[address] || {};
+  const url = `https://api.helius.xyz/v0/token-metadata?api-key=${process.env.HELIUS_API_KEY}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mintAccounts: [address], includeOffChain: true, disableCache: false }),
+  });
+  const j = await r.json();
+  const meta = j?.[0];
+
+  // GoPlus security
+  const gp = await fetch(`https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=${address}`);
+  const gpj = await gp.json();
+  const sec = gpj?.result?.[address.toLowerCase()] || gpj?.result?.[address] || {};
+
   return {
-    mintAuth: td.mintable?.status === '1' ? 'RISK' : td.mintable?.status === '0' ? 'safe' : 'unknown',
-    freezeAuth: td.balance_mutable?.status === '1' ? 'RISK' : td.balance_mutable?.status === '0' ? 'safe' : 'unknown',
-    closable: td.closable?.status === '1' ? 'yes' : 'no',
-    honeypot: 'n/a', buyTax: 'unknown', sellTax: 'unknown',
-    isOpenSource: 'unknown', hiddenOwner: 'unknown', canTakeBack: 'unknown',
-    isProxy: 'unknown', isBlacklisted: 'unknown', transferPausable: 'unknown',
-    ownershipRenounced: 'unknown',
-    top10HolderPct: td.top_10_holder_rate ? (parseFloat(td.top_10_holder_rate)*100).toFixed(1) : null,
-    creatorPct: td.creator_percentage ? (parseFloat(td.creator_percentage)*100).toFixed(1) : null,
-    ownerPct: null,
-    holders: td.holder_count || null,
-    topHolders: td.holders || null,
-    chain: 'Solana',
+    name: meta?.onChainMetadata?.metadata?.data?.name || meta?.offChainMetadata?.metadata?.name,
+    symbol: meta?.onChainMetadata?.metadata?.data?.symbol,
+    mintAuthority: sec.mint_authority || null,
+    freezeAuthority: sec.freeze_authority || null,
+    isHoneypot: sec.honeypot === '1',
+    holderCount: sec.holder_count,
+    top10HolderPercent: sec.top10_holder_ratio,
+    isProxy: sec.is_proxy,
+    isMintable: sec.is_mintable === '1',
+    canTakeBackOwnership: sec.can_take_back_ownership === '1',
+    isOpenSource: sec.is_open_source === '1',
+    isBlacklisted: sec.is_blacklisted === '1',
+    buyTax: sec.buy_tax,
+    sellTax: sec.sell_tax,
+    transferPausable: sec.transfer_pausable === '1',
+    lpHolders: sec.lp_holder_analysis,
+    creatorAddress: sec.creator_address,
+    creatorPercent: sec.creator_percent,
   };
 }
 
 async function secEVM(address) {
-  const chains = [
-    {id:'1',name:'Ethereum'},{id:'56',name:'BSC'},
-    {id:'137',name:'Polygon'},{id:'42161',name:'Arbitrum'},
-    {id:'8453',name:'Base'},{id:'43114',name:'Avalanche'}
-  ];
-  for (const chain of chains) {
-    const r = await fetch(`https://api.gopluslabs.io/api/v1/token_security/${chain.id}?contract_addresses=${address}`);
-    const data = await r.json();
-    if (!data?.result) continue;
-    const td = data.result[address.toLowerCase()] || data.result[address] || {};
-    if (!Object.keys(td).length) continue;
-    return {
-      mintAuth: td.mintable === '1' ? 'RISK' : td.mintable === '0' ? 'safe' : 'unknown',
-      freezeAuth: 'n/a',
-      closable: td.closable?.status === '1' ? 'yes' : 'no',
-      honeypot: td.is_honeypot === '1' ? 'DETECTED' : td.is_honeypot === '0' ? 'none' : 'unknown',
-      buyTax: td.buy_tax ? (parseFloat(td.buy_tax)*100).toFixed(1)+'%' : 'unknown',
-      sellTax: td.sell_tax ? (parseFloat(td.sell_tax)*100).toFixed(1)+'%' : 'unknown',
-      isOpenSource: td.is_open_source === '1' ? 'yes' : 'no',
-      hiddenOwner: td.hidden_owner === '1' ? 'RISK' : 'no',
-      canTakeBack: td.can_take_back_ownership === '1' ? 'RISK' : 'no',
-      isProxy: td.is_proxy === '1' ? 'yes' : 'no',
-      isBlacklisted: td.is_blacklisted === '1' ? 'RISK' : 'no',
-      transferPausable: td.transfer_pausable === '1' ? 'RISK' : 'no',
-      ownershipRenounced: td.owner_address === '' || td.owner_address === '0x0000000000000000000000000000000000000000' ? 'yes' : 'no',
-      top10HolderPct: td.top_10_holder_rate ? (parseFloat(td.top_10_holder_rate)*100).toFixed(1) : null,
-      creatorPct: td.creator_percent ? (parseFloat(td.creator_percent)*100).toFixed(1) : null,
-      ownerPct: td.owner_percent ? (parseFloat(td.owner_percent)*100).toFixed(1) : null,
-      holders: td.holder_count || null,
-      topHolders: td.holders || null,
-      chain: chain.name,
-    };
-  }
-  return null;
+  const gp = await fetch(`https://api.gopluslabs.io/api/v1/token_security/1?contract_addresses=${address}`);
+  const gpj = await gp.json();
+  const sec = gpj?.result?.[address.toLowerCase()] || {};
+  return {
+    name: sec.token_name,
+    symbol: sec.token_symbol,
+    isHoneypot: sec.is_honeypot === '1',
+    holderCount: sec.holder_count,
+    top10HolderPercent: sec.top10_holder_percent,
+    isProxy: sec.is_proxy === '1',
+    isMintable: sec.is_mintable === '1',
+    canTakeBackOwnership: sec.can_take_back_ownership === '1',
+    isOpenSource: sec.is_open_source === '1',
+    isBlacklisted: sec.is_blacklisted === '1',
+    buyTax: sec.buy_tax,
+    sellTax: sec.sell_tax,
+    transferPausable: sec.transfer_pausable === '1',
+    creatorAddress: sec.creator_address,
+    creatorPercent: sec.creator_percent,
+    mintAuthority: null,
+    freezeAuthority: null,
+  };
 }
 
-async function checkSmartWallets(tokenAddress, chain) {
-  if (chain !== 'solana') return null;
-  try {
-    const key = process.env.HELIUS_API_KEY;
-    if (!key) return null;
-    const sixHoursAgo = Math.floor(Date.now()/1000) - 21600;
-    let buyCount = 0;
-    const buyers = [];
-    const r = await fetch(`https://api.helius.xyz/v0/addresses/${tokenAddress}/transactions?api-key=${key}`, {
-      signal: AbortSignal.timeout(5000)
-    });
-    if (!r.ok) return null;
-    const txs = await r.json();
-    if (!Array.isArray(txs)) return null;
-    for (const tx of txs) {
-      if (tx.timestamp < sixHoursAgo) break;
-      const signer = tx.feePayer || tx.signers?.[0];
-      if (signer && SMART_WALLETS.includes(signer) && !buyers.includes(signer)) {
-        buyCount++;
-        buyers.push(signer);
-      }
-    }
-    return { count: buyCount, wallets: buyers.length };
-  } catch(e) {
-    return null;
-  }
+async function aiVerdict(d, s) {
+  if (!process.env.GROQ_API_KEY) return null;
+  const prompt = `You are a DeFi security analyst. Given this token data, provide a 2-sentence risk verdict. Be direct and specific.
+
+Token: ${d?.name || 'Unknown'} (${d?.symbol || '?'})
+Price: $${d?.price || 'N/A'} | Liquidity: $${d?.liquidity || 'N/A'} | 24h Volume: $${d?.volume24h || 'N/A'}
+Holders: ${s?.holderCount || 'N/A'} | Top 10 hold: ${s?.top10HolderPercent || 'N/A'}%
+Honeypot: ${s?.isHoneypot ? 'YES' : 'No'} | Mintable: ${s?.isMintable ? 'YES' : 'No'} | Proxy: ${s?.isProxy ? 'YES' : 'No'}
+Buy Tax: ${s?.buyTax || 0}% | Sell Tax: ${s?.sellTax || 0}%
+Mint Authority: ${s?.mintAuthority || 'Revoked'} | Freeze Authority: ${s?.freezeAuthority || 'Revoked'}`;
+
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+    body: JSON.stringify({
+      model: 'llama3-8b-8192',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 120,
+    }),
+  });
+  const j = await r.json();
+  return j?.choices?.[0]?.message?.content || null;
 }
 
-async function aiVerdict(d, s, chain) {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return null;
-  const prompt = `you are a crypto token risk analyst. analyze this token data and give a 3-line verdict. be direct, no fluff.
-contract: ${d?.name||'unknown'} (${d?.symbol||'???'}) on ${s?.chain||chain}
-price: $${d?.price||'n/a'} mcap: $${d?.mcap||'n/a'} liquidity: $${d?.liquidity||0}
-liq/mcap ratio: ${d?.mcap>0?((d.liquidity/d.mcap)*100).toFixed(2)+'%':'unknown'}
-age: ${d?.ageDays||'unknown'} days
-mint auth: ${s?.mintAuth||'unknown'} freeze auth: ${s?.freezeAuth||'unknown'} hidden owner: ${s?.hiddenOwner||'unknown'}
-honeypot: ${s?.honeypot||'unknown'} hidden owner: ${s?.hiddenOwner||'unknown'}
-blacklist: ${s?.isBlacklisted||'unknown'} transfer pausable: ${s?.transferPausable||'unknown'}
-top10 holders: ${s?.top10HolderPct||'unknown'}%
-format: verdict: [safe/caution/avoid] | key flags: [list] | final call: [one sentence]
-checked onchain not on vibes - TrenchReads`;
-  try {
-    const groqCtrl = new AbortController();
-    setTimeout(() => groqCtrl.abort(), 5000);
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','Authorization':`Bearer ${key}`},
-      body: JSON.stringify({model:'llama3-8b-8192',messages:[{role:'user',content:prompt}],max_tokens:200})
-    });
-    const data = await r.json();
-    return data.choices?.[0]?.message?.content || null;
-  } catch(e) {
-    return null;
+export function calculateScore({ dex: d, sec: s }) {
+  if (!d && !s) return 0;
+  let score = 100;
+  const bd = [];
+
+  if (s?.isHoneypot) { score -= 40; bd.push({ l: 'Honeypot Detected', p: -40, c: 'var(--rl)' }); }
+  if (s?.isMintable) { score -= 20; bd.push({ l: 'Mintable Supply', p: -20, c: 'var(--yl)' }); }
+  if (s?.mintAuthority && s.mintAuthority !== 'null') { score -= 15; bd.push({ l: 'Mint Authority Active', p: -15, c: 'var(--yl)' }); }
+  if (s?.freezeAuthority && s.freezeAuthority !== 'null') { score -= 10; bd.push({ l: 'Freeze Authority Active', p: -10, c: 'var(--yl)' }); }
+  if (s?.isProxy === 'yes') { score -= 5; bd.push({ l: 'Proxy Contract', p: -5, c: 'var(--yl)' }); }
+  if (s?.canTakeBackOwnership) { score -= 15; bd.push({ l: 'Owner Can Reclaim', p: -15, c: 'var(--rl)' }); }
+  if (s?.transferPausable) { score -= 10; bd.push({ l: 'Transfers Pausable', p: -10, c: 'var(--yl)' }); }
+  if (parseFloat(s?.buyTax) > 10) { score -= 10; bd.push({ l: `High Buy Tax (${s.buyTax}%)`, p: -10, c: 'var(--yl)' }); }
+  if (parseFloat(s?.sellTax) > 10) { score -= 15; bd.push({ l: `High Sell Tax (${s.sellTax}%)`, p: -15, c: 'var(--rl)' }); }
+  if (parseFloat(s?.top10HolderPercent) > 0.5) { score -= 10; bd.push({ l: 'Top 10 Hold >50%', p: -10, c: 'var(--yl)' }); }
+  if (d?.createdAt) {
+    const ageHours = (Date.now() - d.createdAt) / 3600000;
+    if (ageHours < 24) { score -= 5; bd.push({ l: `Brand New Token ${Math.floor(ageHours)}h old`, p: -5, c: 'var(--yl)' }); }
   }
-}
+  if (parseFloat(d?.liquidity) < 10000) { score -= 10; bd.push({ l: 'Low Liquidity <$10k', p: -10, c: 'var(--yl)' }); }
 
-function calculateScore(d) {
-  const dex = d.dex || {};
-  const sec = d.sec || {};
-  let s = 100;
-  const liq = dex.liquidity ?? 0, mcap = dex.mcap ?? 0;
-  const vol = dex.volume24h ?? 0, age = dex.ageDays;
-  const buys = dex.buys24h ?? 0, sells = dex.sells24h ?? 0;
-
-  if (liq === 0) s -= 40;
-  else if (liq < 1000) s -= 35;
-  else if (liq < 5000) s -= 28;
-  else if (liq < 20000) s -= 18;
-  else if (liq < 50000) s -= 8;
-
-  if (liq > 0 && mcap > 0) {
-    const r = (liq/mcap)*100;
-    if (r < 0.5) s -= 30;
-    else if (r < 1 && vol > 100) s -= 15;
-    else if (r < 3 && vol > 100) s -= 8;
-    else s -= 5;
-  }
-
-  if (age === null || age === undefined) s -= 5;
-  else if (age < 1) s -= 15;
-  else if (age < 3) s -= 10;
-  else if (age < 7) s -= 5;
-
-  if (buys === 0 && sells === 0 && liq > 0) s -= 30;
-  else if (vol < 50 && liq > 0) s -= 20;
-  else if (vol < 500) s -= 8;
-
-  if (buys > 0 && sells > 0) {
-    const ratio = sells/(buys+sells);
-    if (ratio > 0.8) s -= 10;
-    else if (ratio > 0.65) s -= 5;
-  }
-
-  if (mcap > 0 && mcap < 5000) s -= 10;
-  if (sec.mintAuth === 'RISK') s -= 15;
-  if (sec.freezeAuth === 'RISK') s -= 10;
-  if (sec.honeypot === 'DETECTED') s -= 20;
-  if (sec.isBlacklisted === 'RISK') s -= 8;
-  if (sec.transferPausable === 'RISK') s -= 8;
-  if (sec.hiddenOwner === 'RISK') s -= 8;
-  if (sec.canTakeBack === 'RISK') s -= 8;
-  if (sec.isProxy === 'yes') s -= 5;
-
-  const st = sec.sellTax ? parseFloat(sec.sellTax) : 0;
-  if (st > 10) s -= 10;
-  else if (st > 5) s -= 5;
-
-  const top10 = sec.top10HolderPct ? parseFloat(sec.top10HolderPct) : null;
-  const creatorPct = sec.creatorPct ? parseFloat(sec.creatorPct) : null;
-  if (top10 !== null) {
-    if (top10 > 80) s -= 15;
-    else if (top10 > 60) s -= 10;
-    else if (top10 > 40) s -= 5;
-  }
-  if (creatorPct !== null && creatorPct > 10) s -= 10;
-  else if (creatorPct !== null && creatorPct > 5) s -= 5;
-
-  const missing = (sec.freezeAuth !== 'RISK' && sec.freezeAuth !== 'safe') ||
-    (sec.honeypot !== 'DETECTED' && sec.honeypot !== 'none');
-  let final = Math.max(0, Math.min(100, Math.round(s)));
-  if (missing && final > 85) final = 85;
-  return final;
+  return { score: Math.max(0, score), breakdown: bd };
 }
 
 export default async function handler(req, res) {
@@ -229,16 +147,40 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
- const { ca, address: addr2, apiKey } = req.body || {};
-const address = ca || addr2;
+
+  const { ca, address: addr2, apiKey } = req.body || {};
+  const address = ca || addr2;
+
   if (!address) return res.status(400).json({ error: 'CA required' });
+
+  await setupDB();
+
+  // Pro key validation
+  if (apiKey && apiKey.startsWith('tr_')) {
+    const keyRow = await validateKey(apiKey);
+    if (!keyRow) {
+      return res.status(401).json({ error: 'Invalid or expired Pro key. Please renew your subscription.' });
+    }
+    // Pro user — skip free limit check, proceed
+  } else {
+    // Free tier — check daily limit by IP
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+    const freeCheck = await checkFreeLimit(ip);
+    if (!freeCheck.allowed) {
+      return res.status(429).json({
+        error: 'free_limit_reached',
+        message: 'Free limit reached — 3/3 checks used today. Upgrade to TrenchReads Pro for unlimited checks.',
+      });
+    }
+  }
+
   try {
     const chain = detectChain(address);
     const [d, s] = await Promise.all([dex(address), chain === 'solana' ? secSol(address) : secEVM(address)]);
-    const ai = await aiVerdict(d, s, chain);
-    const score = d ? calculateScore({dex: d, sec: s}) : 0;
-    return res.status(200).json({dex: d, sec: s, chain, ai, score});
-  } catch(e) {
-    return res.status(500).json({error: e.message});
+    const ai = await aiVerdict(d, s);
+    const scoreData = d ? calculateScore({ dex: d, sec: s }) : { score: 0, breakdown: [] };
+    return res.status(200).json({ dex: d, sec: s, chain, ai, score: scoreData.score, breakdown: scoreData.breakdown });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
   }
 }
