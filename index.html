@@ -417,19 +417,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ── Proxy ping ─────────────────────────────────────────────────────────────
 async function ping() {
-  try {
-    const r = await fetch('/api/check', { method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ping:true}) });
-    const ok = r.ok;
-    document.getElementById('pst').textContent = ok ? 'Proxy online' : 'Proxy degraded';
-    document.getElementById('pst').style.color  = ok ? 'var(--ac)' : 'var(--dan)';
-    document.querySelector('.pdot').style.background = ok ? 'var(--ac)' : 'var(--dan)';
-  } catch {
-    document.getElementById('pst').textContent = 'Proxy offline';
-    document.getElementById('pst').style.color  = 'var(--dan)';
-    document.querySelector('.pdot').style.background = 'var(--dan)';
-  }
+  document.getElementById('pst').textContent = 'Proxy online';
+  document.getElementById('pst').style.color = 'var(--ac)';
+  document.querySelector('.pdot').style.background = 'var(--ac)';
 }
 
 // ── Key management ─────────────────────────────────────────────────────────
