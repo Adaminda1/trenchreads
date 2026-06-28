@@ -521,7 +521,12 @@ async function run() {
   showErr(msgs[S.error] || S.error);
   return;
 }
-    render(S);
+    try {
+      render(S);
+    } catch(e) {
+      console.error('Render error:', e.message, e.stack);
+      showErr('Display error: ' + e.message);
+    }
   } catch(e) {
     hideLoad();
     showErr('Request failed — check your connection and try again.');
