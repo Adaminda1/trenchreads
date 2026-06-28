@@ -148,7 +148,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { ca, address: addr2, apiKey } = req.body || {};
+  const { ca, address: addr2, apiKey, proKey } = req.body || {};
+const key = apiKey || proKey;
   const address = ca || addr2;
 
   if (!address) return res.status(400).json({ error: 'CA required' });
@@ -156,8 +157,8 @@ export default async function handler(req, res) {
   await setupDB();
 
   // Pro key validation
-  if (apiKey && apiKey.startsWith('tr_')) {
-    const keyRow = await validateKey(apiKey);
+  if (key && key.startsWith('tr_')) {
+    const keyRow = await validateKey(key);
     if (!keyRow) {
       return res.status(401).json({ error: 'Invalid or expired Pro key. Please renew your subscription.' });
     }
