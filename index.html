@@ -798,7 +798,7 @@ const flags = S.flags || [];
   const sells = dex?.sells24h ?? 0;
   const mktEl = document.getElementById('mktEl');
   if (mktEl) mktEl.innerHTML = [
-    { l:'Price',       v: dex?.price ? `$${dex.price < 0.000001 ? dex.price.toExponential(3) : dex.price.toFixed(6)}` : 'n/a' },
+    { l:'Price',       v: dex?.price ? `$${parseFloat(dex.price) < 0.000001 ? parseFloat(dex.price).toExponential(3) : parseFloat(dex.price).toFixed(6)}` : 'n/a' },
     { l:'Market Cap',  v: mcap ? `$${f(mcap)}` : 'n/a' },
     { l:'Liquidity',   v: liq ? `$${f(liq)}` : 'NONE' },
     { l:'24h Volume',  v: vol ? `$${f(vol)}` : 'n/a' },
