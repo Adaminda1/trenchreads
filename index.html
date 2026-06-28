@@ -738,7 +738,14 @@ function buildFlags(dex, sec, sc) {
 
 // ── render ─────────────────────────────────────────────────────────────────
 function render(S) {
-  const { ca, dex, sec, sc, flags, chain: ch } = S;
+  const { ca, dex, sec, chain: ch } = S;
+const sc = {
+  score: S.score,
+  verdict: S.verdict,
+  cls: S.score >= 70 ? 'safe' : S.score >= 45 ? 'warn' : 'danger',
+  bd: S.breakdown || []
+};
+const flags = S.flags || [];
 
   // Show results
   document.getElementById('res').style.display = 'block';
