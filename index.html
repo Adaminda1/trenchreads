@@ -733,8 +733,137 @@ function buildFlags(dex, sec, sc) {
 
 // ── render ─────────────────────────────────────────────────────────────────
 function render(S) {
-  hideLoad();
   const { ca, dex, sec, sc, flags, chain: ch } = S;
+
+  // Show results
+  document.getElementById('res').style.display = 'block';
+
+  // Verdict card
+  document.getElementById('vc').className = `vc ${sc.cls}`;
+  document.getElementById('vnum').textContent = sc.score;
+  document.getElementById('vt').textContent = dex?.name || ca.slice(0,8);
+  document.getElementById('vtsym').textContent = dex?.symbol ? ` $${dex.symbol}` : '';
+  document.getElementById('vvt').textContent = sc.verdict;
+  document.getElementById('vs').textContent = {
+    safe: 'no major red flags detected',
+    warn: 'some risks present — dyor before aping',
+    danger: 'significant risks detected — avoid'
+  }[sc.cls] || '';
+
+  // Chain badge
+  const cbl = document.getElementById('cbl');
+  if (cbl) cbl.textContent = ch === 'sol' ? 'SOL' : ch || 'SOL';
+
+  // Socials
+  const soc = dex?.socials;
+  if (soc?.twitter || soc?.telegram || soc?.website || dex?.pairUrl) {
+    document.getElementById('socialsBar').style.display = 'flex';
+    if (soc?.twitter)  { const a = document.getElementById('lkX');    a.href = soc.twitter;   a.style.display = 'inline'; }
+    if (soc?.telegram) { const a = document.getElementById('lkTg');   a.href = soc.telegram;  a.style.display = 'inline'; }
+    if (soc?.website)  { const a = document.getElementById('lkWeb');  a.href = soc.website;   a.style.display = 'inline'; }
+    if (dex?.pairUrl)  { const a = document.getElementById('lkChart');a.href = dex.pairUrl;   a.style.display = 'inline'; }
+  }
+
+  // Smart wallets
+  if (S.smartWallets && S.smartWallets.count > 0) {
+    const swb = document.getElementById('swb');
+    if (swb) { swb.style.display = 'block'; swb.textContent = `💰 ${S.smartWallets.count} known smart wallet${S.smartWallets.count > 1 ? 's' : ''} bought in last 6h`; }
+  }
+
+  // Flags
+  document.getElementById('flagsEl').innerHTML = flags.map(fl =>
+    `<div class="flag ${fl.tc}">
+      <div class="fic">${fl.ic}</div>
+      <div class="fb"><div class="ft">${fl.t}</div><div class="fd">${fl.d}</div></div>
+    </div>`
+  ).join('');
+
+  // Market
+  const liq  = dex?.liquidity ?? 0;
+  const mcap = dex?.mcap ?? 0;
+  const vol  = dex?.volume24h ?? 0;
+  const buys = dex?.buys24h ?? 0;
+  const sells = dex?.sells24h ?? 0;
+  const mktEl = document.getElementById('mktEl');
+  if (mktEl) mktEl.innerHTML = [
+    { l:'Price',       v: dex?.price ? `$${dex.price < 0.000001 ? dex.price.toExponential(3) : dex.price.toFixed(6)}` : 'n/a' },
+    { l:'Market Cap',  v: mcap ? `$${f(mcap)}` : 'n/a' },
+    { l:'Liquidity',   v: liq ? `$${f(liq)}` : 'NONE' },
+    { l:'24h Volume',  v: vol ? `$${f(vol)}` : 'n/a' },
+    { l:'24h Change',  v: dex?.priceChange24h != null ? `${dex.priceChange24h >= 0 ? '+' : ''}${parseFloat(dex.priceChange24h).toFixed(2)}%` : 'n/a' },
+    { l:'Age',         v: dex?.ageDays != null ? `${dex.ageDays}d` : dex?.ageHours != null ? `${dex.ageHours}h` : 'n/a' },
+    { l:'Holders',     v: sec?.holderCount || sec?.holders || 'n/a' },
+    { l:'Liq/MCap',    v: liq > 0 && mcap > 0 ? `${((liq/mcap)*100).toFixed(1)}%` : 'n/a' },
+  ].map(c => `<div class="mc"><div class="mn">${c.l}</div><div class="mv">${c.v}</div></div>`).join('');
+
+  // Buy/sell strip
+  const mBS = document.getElementById('mBS');
+  if (mBS && (buys > 0 || sells > 0)) {
+    mBS.textContent = `${buys} buys / ${sells} sells`;
+    const ratio = sells / (buys + sells);
+    mBS.style.color = ratio > 0.75 ? 'var(--dan)' : ratio > 0.6 ? 'var(--warn)' : 'var(--ac)';
+  }
+
+  // Holders
+  const top10 = sec?.top10HolderPct ? parseFloat(sec.top10HolderPct) : null;
+  if (top10 !== null || (sec?.topHolders && sec.topHolders.length > 0)) {
+    document.getElementById('holderSec').style.display = 'block';
+    const bar = document.querySelector('#concBar div');
+    if (bar) { bar.style.width = `${top10}%`; bar.style.background = top10 > 80 ? 'var(--dan)' : top10 > 60 ? 'var(--warn)' : 'var(--ac)'; }
+    const concPct = document.getElementById('concPct');
+    if (concPct) concPct.textContent = `Top 10 Wallets: ${top10}% of supply`;
+    const concV = document.getElementById('concVerdict');
+    if (concV) concV.textContent = top10 > 80 ? '🔴 extreme risk' : top10 > 60 ? '🟡 high concentration' : top10 > 40 ? '🟡 moderate' : '✅ well distributed';
+    const holders = sec?.topHolders || [];
+    if (holders.length > 0) {
+      document.getElementById('holdersEl').innerHTML = holders.slice(0,10).map((h,i) => {
+        const pct = h.percent ? (parseFloat(h.percent)*100).toFixed(2) : h.pct || '?';
+        const addr = h.address || h.account || '–';
+        const pctNum = parseFloat(pct);
+        const color = pctNum > 20 ? 'var(--dan)' : pctNum > 10 ? 'var(--warn)' : 'var(--ac)';
+        return `<div class="holder-row">
+          <div class="h-rank">#${i+1}</div>
+          <div class="h-addr">${addr.slice(0,6)}...${addr.slice(-4)}</div>
+          <div class="h-bar-wrap"><div class="h-bar" style="width:${Math.min(100,pctNum*5)}%;background:${color}"></div></div>
+          <div class="h-pct" style="color:${color}">${pct}%</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Contract security
+  const secRows = {
+    rMint:   { val: sec?.mintAuth,   map: { RISK:['d','ACTIVE'],    safe:['s','REVOKED'],   null:['n','n/a'] } },
+    rFreeze: { val: sec?.freezeAuth, map: { RISK:['d','ACTIVE'],    safe:['s','DISABLED'],  null:['n','n/a'] } },
+    rHoney:  { val: sec?.honeypot,   map: { DETECTED:['d','YES ⚠'], none:['s','Clean'],     null:['n','n/a'] } },
+    rClose:  { val: sec?.closable,   map: { yes:['w','Yes'],        no:['s','No'],          null:['n','n/a'] } },
+  };
+  const spanIds = { rMint:'sMint', rFreeze:'sFreeze', rHoney:'sHoney', rClose:'sClose' };
+  for (const [rowId, cfg] of Object.entries(secRows)) {
+    const v = cfg.val || 'null';
+    const [cls, txt] = cfg.map[v] || ['n', v];
+    const span = document.getElementById(spanIds[rowId]);
+    if (span) span.innerHTML = bh(cls, txt);
+  }
+
+  // Score breakdown
+  document.getElementById('bdEl').innerHTML = (sc.bd || []).map(i =>
+    `<div class="bi">
+      <span class="bi-l">${i.l}</span>
+      <div class="bi-bw"><div class="bi-b" style="width:${i.p === 0 ? 50 : Math.max(5, 100 + i.p * 2)}%;background:${i.p < 0 ? 'var(--dan)' : 'var(--ac)'}"></div></div>
+      <span class="bi-p" style="color:${i.p < 0 ? 'var(--dan)' : 'var(--ac)'}">${i.p > 0 ? '+' : ''}${i.p}</span>
+    </div>`
+  ).join('');
+
+  // Action links
+  document.getElementById('aDex').href  = `https://dexscreener.com/solana/${ca}`;
+  document.getElementById('aSol').href  = `https://solscan.io/token/${ca}`;
+  document.getElementById('aBird').href = `https://birdeye.so/token/${ca}`;
+  document.getElementById('aGop').href  = `https://app.goplus.xyz/token/solana/${ca}`;
+
+  // Timestamp
+  document.getElementById('ft').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+}
 
   // Verdict
   const vcEl = document.getElementById('vc');
