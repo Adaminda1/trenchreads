@@ -739,13 +739,45 @@ function buildFlags(dex, sec, sc) {
 // ── render ─────────────────────────────────────────────────────────────────
 function render(S) {
   const { ca, dex, sec, chain: ch } = S;
-const sc = {
-  score: S.score,
-  verdict: S.verdict,
-  cls: S.score >= 70 ? 'safe' : S.score >= 45 ? 'warn' : 'danger',
-  bd: S.breakdown || []
-};
-const flags = S.flags || [];
+  const sc = {
+    score: Math.min(95, S.score || 0),
+    verdict: S.verdict,
+    cls: (S.score || 0) >= 70 ? 'safe' : (S.score || 0) >= 45 ? 'warn' : 'danger',
+    bd: S.breakdown || []
+  };
+
+  // Normalize field names from API
+  const liq    = dex?.liquidity || 0;
+  const mcap   = dex?.marketCap || 0;
+  const vol    = dex?.volume24h || 0;
+  const buys   = dex?.txns24h?.buys || 0;
+  const sells  = dex?.txns24h?.sells || 0;
+  const price  = parseFloat(dex?.price || 0);
+  const chg    = dex?.priceChange24h;
+  const ageMs  = dex?.createdAt ? Date.now() - dex.createdAt : null;
+  const ageDays = ageMs ? Math.floor(ageMs / 86400000) : null;
+  const ageHours = ageMs ? Math.floor(ageMs / 3600000) : null;
+
+  // Normalize sec fields
+  const mintAuth   = sec?.mintAuthority === null ? 'safe' : sec?.mintAuthority ? 'RISK' : 'unknown';
+  const freezeAuth = sec?.freezeAuthority === null ? 'safe' : sec?.freezeAuthority ? 'RISK' : 'unknown';
+  const honeypot   = sec?.isHoneypot === false ? 'none' : sec?.isHoneypot === true ? 'DETECTED' : 'unknown';
+  const holders    = sec?.holderCount || sec?.holders || null;
+
+  // Build flags from normalized data
+  const flags = buildFlags(
+    { liquidity: liq, mcap, volume24h: vol, buys24h: buys, sells24h: sells,
+      ageDays, ageHours, socials: dex?.socials, dexPaid: dex?.dexPaid, dex: dex?.dexId },
+    { mintAuth, freezeAuth, honeypot,
+      isBlacklisted: sec?.isBlacklisted ? 'RISK' : null,
+      transferPausable: sec?.transferPausable ? 'RISK' : null,
+      hiddenOwner: sec?.canTakeBackOwnership ? 'RISK' : null,
+      isOpenSource: sec?.isOpenSource ? 'yes' : 'no',
+      top10HolderPct: sec?.top10HolderPct,
+      creatorPct: sec?.creatorPct,
+      sellTax: sec?.sellTax },
+    sc.score
+  );
 
   // Show results
   document.getElementById('res').style.display = 'block';
@@ -764,7 +796,7 @@ const flags = S.flags || [];
 
   // Chain badge
   const cbl = document.getElementById('cbl');
-  if (cbl) cbl.textContent = ch === 'sol' ? 'SOL' : ch || 'SOL';
+  if (cbl) { cbl.textContent = ch === 'solana' ? 'SOL' : ch || 'SOL'; }
 
   // Socials
   const soc = dex?.socials;
@@ -783,36 +815,33 @@ const flags = S.flags || [];
   }
 
   // Flags
-  document.getElementById('flagsEl').innerHTML = flags.map(fl =>
+  document.getElementById('flagsEl').innerHTML = flags.length ? flags.map(fl =>
     `<div class="flag ${fl.tc}">
       <div class="fic">${fl.ic}</div>
       <div class="fb"><div class="ft">${fl.t}</div><div class="fd">${fl.d}</div></div>
     </div>`
-  ).join('');
+  ).join('') : '<div class="flag mu"><div class="fic">🔍</div><div class="fb"><div class="ft">Scanning complete</div><div class="fd">No critical flags detected.</div></div></div>';
 
-  // Market
-  const liq  = dex?.liquidity ?? 0;
-  const mcap = dex?.mcap ?? 0;
-  const vol  = dex?.volume24h ?? 0;
-  const buys = dex?.buys24h ?? 0;
-  const sells = dex?.sells24h ?? 0;
+  // Market grid
   const mktEl = document.getElementById('mktEl');
   if (mktEl) mktEl.innerHTML = [
-    { l:'Price',       v: dex?.price ? `$${parseFloat(dex.price) < 0.000001 ? parseFloat(dex.price).toExponential(3) : parseFloat(dex.price).toFixed(6)}` : 'n/a' },
-    { l:'Market Cap',  v: mcap ? `$${f(mcap)}` : 'n/a' },
-    { l:'Liquidity',   v: liq ? `$${f(liq)}` : 'NONE' },
-    { l:'24h Volume',  v: vol ? `$${f(vol)}` : 'n/a' },
-    { l:'24h Change',  v: dex?.priceChange24h != null ? `${dex.priceChange24h >= 0 ? '+' : ''}${parseFloat(dex.priceChange24h).toFixed(2)}%` : 'n/a' },
-    { l:'Age',         v: dex?.ageDays != null ? `${dex.ageDays}d` : dex?.ageHours != null ? `${dex.ageHours}h` : 'n/a' },
-    { l:'Holders',     v: sec?.holderCount || sec?.holders || 'n/a' },
-    { l:'Liq/MCap',    v: liq > 0 && mcap > 0 ? `${((liq/mcap)*100).toFixed(1)}%` : 'n/a' },
+    { l:'Price',      v: price ? `$${price < 0.000001 ? price.toExponential(3) : price < 0.01 ? price.toFixed(8) : price.toFixed(4)}` : 'n/a' },
+    { l:'Market Cap', v: mcap ? `$${f(mcap)}` : 'n/a' },
+    { l:'Liquidity',  v: liq  ? `$${f(liq)}`  : 'NONE' },
+    { l:'24h Volume', v: vol  ? `$${f(vol)}`   : 'n/a' },
+    { l:'24h Change', v: chg != null ? `${chg >= 0 ? '+' : ''}${parseFloat(chg).toFixed(2)}%` : 'n/a' },
+    { l:'Age',        v: ageDays != null ? ageDays < 1 ? `${ageHours}h` : `${ageDays}d` : 'n/a' },
+    { l:'Holders',    v: holders ? Number(holders).toLocaleString() : 'n/a' },
+    { l:'Liq/MCap',   v: liq > 0 && mcap > 0 ? `${((liq/mcap)*100).toFixed(1)}%` : 'n/a' },
+    { l:'Buys 24h',   v: buys  ? buys.toLocaleString()  : 'n/a' },
+    { l:'Sells 24h',  v: sells ? sells.toLocaleString() : 'n/a' },
   ].map(c => `<div class="mc"><div class="mn">${c.l}</div><div class="mv">${c.v}</div></div>`).join('');
 
   // Buy/sell strip
   const mBS = document.getElementById('mBS');
   if (mBS && (buys > 0 || sells > 0)) {
-    mBS.textContent = `${buys} buys / ${sells} sells`;
     const ratio = sells / (buys + sells);
+    mBS.textContent = `${buys} buys / ${sells} sells — ${ratio > 0.75 ? '⚠ heavy sell pressure' : ratio > 0.6 ? 'elevated sells' : 'balanced'}`;
     mBS.style.color = ratio > 0.75 ? 'var(--dan)' : ratio > 0.6 ? 'var(--warn)' : 'var(--ac)';
   }
 
@@ -826,9 +855,9 @@ const flags = S.flags || [];
     if (concPct) concPct.textContent = `Top 10 Wallets: ${top10}% of supply`;
     const concV = document.getElementById('concVerdict');
     if (concV) concV.textContent = top10 > 80 ? '🔴 extreme risk' : top10 > 60 ? '🟡 high concentration' : top10 > 40 ? '🟡 moderate' : '✅ well distributed';
-    const holders = sec?.topHolders || [];
-    if (holders.length > 0) {
-      document.getElementById('holdersEl').innerHTML = holders.slice(0,10).map((h,i) => {
+    const holdersEl = sec?.topHolders || [];
+    if (holdersEl.length > 0) {
+      document.getElementById('holdersEl').innerHTML = holdersEl.slice(0,10).map((h,i) => {
         const pct = h.percent ? (parseFloat(h.percent)*100).toFixed(2) : h.pct || '?';
         const addr = h.address || h.account || '–';
         const pctNum = parseFloat(pct);
@@ -844,28 +873,44 @@ const flags = S.flags || [];
   }
 
   // Contract security
-  const secRows = {
-    rMint:   { val: sec?.mintAuth,   map: { RISK:['d','ACTIVE'],    safe:['s','REVOKED'],   null:['n','n/a'] } },
-    rFreeze: { val: sec?.freezeAuth, map: { RISK:['d','ACTIVE'],    safe:['s','DISABLED'],  null:['n','n/a'] } },
-    rHoney:  { val: sec?.honeypot,   map: { DETECTED:['d','YES ⚠'], none:['s','Clean'],     null:['n','n/a'] } },
-    rClose:  { val: sec?.closable,   map: { yes:['w','Yes'],        no:['s','No'],          null:['n','n/a'] } },
-  };
-  const spanIds = { rMint:'sMint', rFreeze:'sFreeze', rHoney:'sHoney', rClose:'sClose' };
-  for (const [rowId, cfg] of Object.entries(secRows)) {
-    const v = cfg.val || 'null';
-    const [cls, txt] = cfg.map[v] || ['n', v];
-    const span = document.getElementById(spanIds[rowId]);
-    if (span) span.innerHTML = bh(cls, txt);
+  const bh = (c,t) => `<span class="bh ${c}">${t}</span>`;
+  const sMint   = document.getElementById('sMint');
+  const sFreeze = document.getElementById('sFreeze');
+  const sHoney  = document.getElementById('sHoney');
+  const sClose  = document.getElementById('sClose');
+  if (sMint)   sMint.innerHTML   = mintAuth === 'safe' ? bh('s','REVOKED') : mintAuth === 'RISK' ? bh('d','ACTIVE') : bh('n','n/a');
+  if (sFreeze) sFreeze.innerHTML = freezeAuth === 'safe' ? bh('s','DISABLED') : freezeAuth === 'RISK' ? bh('d','ACTIVE') : bh('n','n/a');
+  if (sHoney)  sHoney.innerHTML  = honeypot === 'none' ? bh('s','Clean') : honeypot === 'DETECTED' ? bh('d','HONEYPOT') : bh('n','n/a');
+  if (sClose)  sClose.innerHTML  = sec?.closable === 'yes' ? bh('w','Yes') : sec?.closable === 'no' ? bh('s','No') : bh('n','n/a');
+
+  // Show extra sec rows
+  if (sec?.isBlacklisted !== undefined) {
+    document.getElementById('rBlacklist').style.display = 'flex';
+    document.getElementById('fBlacklist').innerHTML = sec.isBlacklisted ? bh('d','YES') : bh('s','No');
+  }
+  if (sec?.transferPausable !== undefined) {
+    document.getElementById('rPause').style.display = 'flex';
+    document.getElementById('fPause').innerHTML = sec.transferPausable ? bh('d','YES') : bh('s','No');
+  }
+  if (sec?.canTakeBackOwnership !== undefined) {
+    document.getElementById('rHidden').style.display = 'flex';
+    document.getElementById('fHidden').innerHTML = sec.canTakeBackOwnership ? bh('d','YES – RISK') : bh('s','No');
+  }
+  if (sec?.isOpenSource !== undefined) {
+    document.getElementById('rOpen').style.display = 'flex';
+    document.getElementById('fOpen').innerHTML = sec.isOpenSource ? bh('s','Verified') : bh('w','Unverified');
   }
 
   // Score breakdown
-  document.getElementById('bdEl').innerHTML = (sc.bd || []).map(i =>
-    `<div class="bi">
-      <span class="bi-l">${i.l}</span>
-      <div class="bi-bw"><div class="bi-b" style="width:${i.p === 0 ? 50 : Math.max(5, 100 + i.p * 2)}%;background:${i.p < 0 ? 'var(--dan)' : 'var(--ac)'}"></div></div>
-      <span class="bi-p" style="color:${i.p < 0 ? 'var(--dan)' : 'var(--ac)'}">${i.p > 0 ? '+' : ''}${i.p}</span>
-    </div>`
-  ).join('');
+  document.getElementById('bdEl').innerHTML = (sc.bd || []).length > 0
+    ? sc.bd.map(i =>
+        `<div class="bi">
+          <span class="bi-l">${i.l || i[1] || ''}</span>
+          <div class="bi-bw"><div class="bi-b" style="width:${Math.max(5, 50 + (i.p || i[2] || 0))}%;background:${(i.p||i[2]||0) < 0 ? 'var(--dan)' : 'var(--ac)'}"></div></div>
+          <span class="bi-p" style="color:${(i.p||i[2]||0) < 0 ? 'var(--dan)' : 'var(--ac)'}">${(i.p||i[2]||0) > 0 ? '+' : ''}${i.p||i[2]||0}</span>
+        </div>`
+      ).join('')
+    : '<div style="font-size:11px;color:var(--mu)">Breakdown not available for this token.</div>';
 
   // Action links
   document.getElementById('aDex').href  = `https://dexscreener.com/solana/${ca}`;
@@ -879,29 +924,31 @@ const flags = S.flags || [];
 
 // ── shareX ─────────────────────────────────────────────────────────────────
 function shareX() {
-  const sym    = document.getElementById('tsym').textContent;
-  const { dex, sec, score: sc, flags, ca } = S;
-  const riskLabel = sc.cls === 'safe' ? '🟢 LOW' : sc.cls === 'caution' ? '🟡 MEDIUM ⚠' : '🔴 HIGH 🚨';
-  const topFlags = flags.filter(fl => fl.sev >= 3).slice(0,3).map(fl => `${ fl.ic } ${ fl.t }`).join('\n');
-  const top10 = sec?.top10HolderPct ? `\ntop 10 holders: ${ sec.top10HolderPct }%` : '';
-  const devHold = sec?.creatorPct ? `\ndev wallet: ${ sec.creatorPct }% of supply` : '';
-  const tweet = `just checked ${ sym } on #TrenchReads\n\nRisk: ${ riskLabel } (${ (sc.score/100).toFixed(2) })\n\nmcap: $${ f(dex?.mcap || 0) }\nliquidity: $${ f(dex?.liquidity || 0) }\n24h liq/mcap: ${ dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2) : '?' }%\n...${ ca.slice(-4) }${ dex?.ageDays !== null ? `\nage: ${ dex.ageDays }d` : '' }${top10}${devHold}\n\nnca: ${ ca.slice(0,8) }\n\nchecked onchain not on vibes – @TrenchReads_io`;
-  window.open(`https://twitter.com/intent/tweet?text=${ encodeURIComponent(tweet) }`, '_blank');
+  const sym    = document.getElementById('vtsym').textContent;
+  const score  = document.getElementById('vnum').textContent;
+  const verdict = document.getElementById('vvt').textContent;
+  const ca     = document.getElementById('ca').value.trim();
+  const riskLabel = verdict.includes('SAFE') ? '🟢 LOW' : verdict.includes('CAUTION') ? '🟡 MEDIUM ⚠' : '🔴 HIGH 🚨';
+  const tweet = `just scanned ${sym} on #TrenchReads\n\nRisk: ${riskLabel} (${score}/100)\nVerdict: ${verdict}\n\nCA: ${ca.slice(0,8)}...${ca.slice(-4)}\n\nchecked onchain not on vibes – trenchreads.vercel.app`;
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`, '_blank');
 }
 
 // ── copyIt ─────────────────────────────────────────────────────────────────
 function copyIt() {
-  const sym    = document.getElementById('tsym').textContent;
-  const { dex, sec, score: sc, flags, ca } = S;
-  const allFlags = flags.map(fl => `${ fl.ic } : ${ fl.t }\n${ fl.d }`).join('\n\n');
-  const holders = sec?.top10HolderPct ? `\ntop 10 holders: ${ sec.top10HolderPct }% of supply` : '';
-  const dev = sec?.creatorPct ? `\ndev wallet: ${ sec.creatorPct }% of supply` : '';
-  const licRatio = dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2) : null;
-  const licWarning = licRatio && parseFloat(licRatio) < 1 ? `\n⚠ DANGER: Liq/MCap only ${ licRatio }% – insiders can dump with almost no resistance` : '';
-  const txt = `#TrenchReads – ${ sym }\nRISK SCORE: ${ sc.score }/100\nVERDICT: ${ sc.verdict }${ licWarning }\n\nFLAGS:\n${ allFlags }\n\nMARKET:\nliquidity: $${ f(dex?.liquidity || 0) }\nliq/mcap: ${ dex?.mcap > 0 ? ((dex.liquidity/dex.mcap)*100).toFixed(2) : 'unknown' }%\nvol: $${ f(dex?.volume24h || 0) }\nnage: ${ dex?.ageDays !== null ? dex.ageDays + 'd' : '?' }${ holders }${ dev }\nnca: ${ ca }\n\nchecked onchain not on vibes – @TrenchReads_io`;
+  const sym     = document.getElementById('vtsym').textContent;
+  const score   = document.getElementById('vnum').textContent;
+  const verdict = document.getElementById('vvt').textContent;
+  const ca      = document.getElementById('ca').value.trim();
+  const flags   = [...document.querySelectorAll('#flagsEl .flag')].map(f => {
+    const t = f.querySelector('.ft')?.textContent || '';
+    const d = f.querySelector('.fd')?.textContent || '';
+    return `${t}\n${d}`;
+  }).join('\n\n');
+  const txt = `#TrenchReads – ${sym}\nRISK SCORE: ${score}/100\nVERDICT: ${verdict}\n\nFLAGS:\n${flags}\n\nCA: ${ca}\n\nchecked onchain not on vibes – trenchreads.vercel.app`;
   navigator.clipboard.writeText(txt).then(() => {
-    const b = document.getElementById('cpBtn'); b.textContent = '✓ copied!'; b.classList.add('done');
-    setTimeout(() => { b.textContent = '→ copy verdict'; b.classList.remove('done'); }, 2000);
+    const b = document.getElementById('cpBtn');
+    b.textContent = '✓ copied!';
+    setTimeout(() => { b.textContent = '📋 Copy Verdict'; }, 2000);
   });
 }
 
