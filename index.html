@@ -787,12 +787,17 @@ function render(S) {
   document.getElementById('vnum').textContent = sc.score;
   document.getElementById('vt').textContent = dex?.name || ca.slice(0,8);
   document.getElementById('vtsym').textContent = dex?.symbol ? ` $${dex.symbol}` : '';
-  document.getElementById('vvt').textContent = sc.verdict;
+  const verdictMap = {
+    safe:   'RELATIVELY SAFE',
+    warn:   'PROCEED WITH CAUTION',
+    danger: 'HIGH RISK – AVOID'
+  };
+  document.getElementById('vvt').textContent = sc.verdict || verdictMap[sc.cls] || 'PROCEED WITH CAUTION';
   document.getElementById('vs').textContent = {
-    safe: 'no major red flags detected',
-    warn: 'some risks present — dyor before aping',
+    safe:   'no major red flags detected',
+    warn:   'some risks present — dyor before aping',
     danger: 'significant risks detected — avoid'
-  }[sc.cls] || '';
+  }[sc.cls] || 'some risks present — dyor before aping';
 
   // Chain badge
   const cbl = document.getElementById('cbl');
