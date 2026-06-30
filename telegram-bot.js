@@ -46,57 +46,63 @@ async function checkToken(address, proKey) {
 }
 
 // ── Build result message ───────────────────────────────────────────────────
+// Uses the SAME field names and SAME scoring output as the web frontend (api/check.js)
 function buildMessage(d, address, isPro) {
   const dex   = d.dex || {};
   const sec   = d.sec || {};
   const score = d.score ?? 0;
-  const liq   = dex.liquidity || 0;
-  const mcap  = dex.mcap || 0;
+  const verdict = d.verdict || 'UNKNOWN';
+  const cls     = d.cls || 'warn';
+  const breakdown = d.breakdown || [];
+  const ai      = d.ai || null;
 
-  const rugRatio   = (liq > 0 && mcap > 0) ? (liq / mcap) * 100 : 999;
-  const criticalRug = rugRatio < 1;
+  const liq  = dex.liquidity || 0;
+  const mcap = dex.marketCap || 0;
+  const vol  = dex.volume24h || 0;
+  const buys  = dex.txns24h?.buys  || 0;
+  const sells = dex.txns24h?.sells || 0;
 
-  let verdictEmoji, verdictText;
-  if (score >= 70 && !criticalRug)      { verdictEmoji = '🟢'; verdictText = 'RELATIVELY SAFE'; }
-  else if (score >= 70 && criticalRug)  { verdictEmoji = '🟡'; verdictText = 'PROCEED WITH CAUTION — critical rug exit risk'; }
-  else if (score >= 45)                 { verdictEmoji = '🟡'; verdictText = 'PROCEED WITH CAUTION'; }
-  else                                  { verdictEmoji = '🔴'; verdictText = 'HIGH RISK — AVOID'; }
+  const rugRatio    = (liq > 0 && mcap > 0) ? (liq / mcap) * 100 : null;
+  const verdictEmoji = cls === 'safe' ? '🟢' : cls === 'warn' ? '🟡' : '🔴';
 
   // Rug ratio line
   let rugLine = '';
-  if (liq > 0 && mcap > 0) {
+  if (rugRatio !== null) {
     const r = rugRatio.toFixed(2);
-    if (criticalRug)      rugLine = `\n🔴 <b>Rug Exit Risk — CRITICAL (${r}%)</b>\nOnly ${r}% of mcap is liquid. Insiders can exit. You may not.`;
+    if (rugRatio < 1)      rugLine = `\n🔴 <b>Rug Exit Risk — ${r}% Liq/MCap</b>\nInsiders can dump and still exit clean. You may not.`;
     else if (rugRatio < 3) rugLine = `\n🟡 Low Rug Buffer (${r}%) — thin cushion, watch whale wallets`;
     else                   rugLine = `\n✅ Rug Exit Risk: ${r}% — ${rugRatio > 10 ? 'healthy' : 'acceptable'}`;
   }
 
-  // Flags
-  const flags = [];
-  if (sec.honeypot === 'DETECTED')           flags.push('🔴 HONEYPOT — cannot sell');
-  if (sec.mintAuth === 'RISK')               flags.push('🔴 Mint Authority active — dev can print tokens');
-  if (sec.freezeAuth === 'RISK')             flags.push('🔴 Freeze Authority active');
-  if (sec.isBlacklisted === 'RISK')          flags.push('🔴 Blacklist function detected');
-  if (sec.transferPausable === 'RISK')       flags.push('🔴 Transfer can be paused');
-  if (sec.hiddenOwner === 'RISK')            flags.push('🔴 Hidden owner detected');
-  if (sec.mintAuth === 'safe')               flags.push('✅ Mint authority revoked');
-  if (sec.freezeAuth === 'safe')             flags.push('✅ Freeze authority disabled');
-  if (sec.honeypot === 'none')               flags.push('✅ No honeypot detected');
-  if (liq > 50000)                           flags.push(`✅ Strong liquidity ($${f(liq)})`);
-  if (!flags.length)                         flags.push('⚠️ Limited security data — check manually');
+  // Flags — derived from breakdown (same source as web UI)
+  const negFlags = breakdown.filter(b => b.p < 0).map(b => `🔴 ${b.l}`);
+  const posFlags = breakdown.filter(b => b.p > 0).map(b => `✅ ${b.l}`);
+  const flags = [...negFlags, ...posFlags];
+  if (!flags.length) flags.push('⚠️ Limited security data — check manually');
 
-  const capNotice = score === 85 ? '\n<i>Score capped at 85 — freeze/honeypot unconfirmed</i>' : '';
-  const age       = dex.ageDays != null ? dex.ageDays + 'd' : dex.ageHours != null ? dex.ageHours + 'h' : '?';
-  const top10     = sec.top10HolderPct ? sec.top10HolderPct + '%' : 'n/a';
-  const proBadge  = isPro ? ' <b>[PRO]</b>' : '';
+  const age = dex.createdAt
+    ? (() => {
+        const ms = Date.now() - dex.createdAt;
+        const d_ = Math.floor(ms / 86400000);
+        const h_ = Math.floor(ms / 3600000);
+        return d_ >= 1 ? `${d_}d` : `${h_}h`;
+      })()
+    : '?';
 
-  // Smart wallet signal (pro only)
-  const smartLine = (isPro && d.smartWallets && d.smartWallets.count > 0)
-    ? `\n💰 <b>Smart Wallet Signal: ${d.smartWallets.count} known wallet${d.smartWallets.count > 1 ? 's' : ''} bought in last 6h</b>\n`
-    : '';
+  const top10    = sec.top10HolderPct ? sec.top10HolderPct + '%' : 'n/a';
+  const proBadge = isPro ? ' <b>[PRO]</b>' : '';
+
+  // Top holders list (pro only — matches web UI holders section)
+  let holdersLine = '';
+  if (isPro && sec.topHolders?.length > 0) {
+    const list = sec.topHolders.slice(0, 5).map((h, i) =>
+      `${i + 1}. ${h.address.slice(0, 4)}...${h.address.slice(-4)} — ${h.pct}%${h.tag ? ` (${h.tag})` : ''}`
+    ).join('\n');
+    holdersLine = `\n\n<b>TOP HOLDERS:</b>\n${list}`;
+  }
 
   // Sell tax line (pro only)
-  const taxLine = isPro && sec.sellTax && sec.sellTax !== 'unknown'
+  const taxLine = isPro && sec.sellTax && parseFloat(sec.sellTax) > 0
     ? `Sell Tax: ${sec.sellTax}% | `
     : '';
 
@@ -105,23 +111,33 @@ function buildMessage(d, address, isPro) {
     ? `\nDev Holdings: ${sec.creatorPct}%`
     : '';
 
+  // AI verdict (pro feature — the differentiator)
+  const aiLine = isPro && ai
+    ? `\n\n🤖 <b>AI VERDICT:</b>\n<i>${ai}</i>`
+    : '';
+
+  const buySellLine = (buys > 0 || sells > 0)
+    ? `\n🔄 24h Txns: ${buys} buys / ${sells} sells`
+    : '';
+
   return (
-    `<b>#TrenchReads${ proBadge } — $${dex.symbol || address.slice(0, 8)}</b>\n` +
+    `<b>#TrenchReads${proBadge} — $${dex.symbol || address.slice(0, 8)}</b>\n` +
     `checked onchain, not on vibes\n\n` +
     `<b>RISK SCORE: ${score}/100</b>\n` +
-    `${verdictEmoji} ${verdictText}${capNotice}` +
+    `${verdictEmoji} ${verdict}` +
     `${rugLine}\n\n` +
     `<b>FLAGS:</b>\n${flags.join('\n')}\n\n` +
     `<b>MARKET:</b>\n` +
     `💰 Liquidity: $${f(liq)}\n` +
     `📊 MCap: $${f(mcap)}\n` +
-    `📈 24h Vol: $${f(dex.volume24h || 0)}\n` +
+    `📈 24h Vol: $${f(vol)}${buySellLine}\n` +
     `🕐 Age: ${age}\n` +
-    `👥 Top 10 holders: ${top10}${devLine}\n\n` +
+    `👥 Top 10 holders: ${top10}${devLine}` +
+    `${holdersLine}\n\n` +
     `<b>CONTRACT:</b>\n` +
-    `${taxLine}Mint: ${sec.mintAuth || 'unknown'} | Freeze: ${sec.freezeAuth || 'unknown'}\n` +
-    `Honeypot: ${sec.honeypot || 'unknown'}\n` +
-    `${smartLine}\n` +
+    `${taxLine}Mint: ${sec.mintAuthority ? 'ACTIVE ⚠' : 'Revoked ✅'} | Freeze: ${sec.freezeAuthority ? 'ACTIVE ⚠' : 'Revoked ✅'}\n` +
+    `Honeypot: ${sec.isHoneypot ? 'DETECTED 🔴' : 'Clean ✅'}` +
+    `${aiLine}\n\n` +
     `CA: <code>${address}</code>\n` +
     `🔗 <a href="https://trenchreads.vercel.app">trenchreads.vercel.app</a>`
   );
@@ -137,8 +153,8 @@ function startMessage() {
     `/activate &lt;tr_key&gt; — unlock pro access\n` +
     `/status — check your pro status\n` +
     `/help — show this menu\n\n` +
-    `<b>Free tier:</b> 3 scans/day\n` +
-    `<b>Pro tier:</b> unlimited scans + smart wallet signals + dev holdings\n\n` +
+    `<b>Free tier:</b> 3 scans/day, core risk score\n` +
+    `<b>Pro tier:</b> unlimited scans + AI verdict + top holder list + dev holdings + tax breakdown\n\n` +
     `Get pro at trenchreads.vercel.app (5 USDC one-time)`
   );
 }
@@ -171,7 +187,7 @@ async function handleActivate(chatId, args) {
   return sendMsg(chatId,
     `✅ <b>Pro access activated!</b>\n\n` +
     `Your account is now linked to your pro key.\n` +
-    `You have <b>unlimited scans</b> + smart wallet signals + dev holdings.\n\n` +
+    `You have <b>unlimited scans</b> + AI verdict + top holders + dev holdings.\n\n` +
     `Send any token address to scan it.\n` +
     `checked onchain, not on vibes 🔍`
   );
@@ -184,18 +200,15 @@ async function handleStatus(chatId) {
     return sendMsg(chatId,
       `✅ <b>Pro Status: Active</b>\n\n` +
       `Unlimited scans enabled.\n` +
-      `Smart wallet signals: ON\n` +
+      `AI verdict: ON\n` +
+      `Top holders list: ON\n` +
       `Dev holdings: ON\n\n` +
       `checked onchain, not on vibes 🔍`
     );
   }
-  // Check remaining free scans
-  const limit = await checkTelegramFreeLimit(chatId);
-  // Undo the count increment since this is just a status check
-  // (checkTelegramFreeLimit increments — we call it read-only here by not caring)
   return sendMsg(chatId,
     `🆓 <b>Free Tier Active</b>\n\n` +
-    `Upgrade to pro for unlimited scans + smart wallet signals.\n\n` +
+    `Upgrade to pro for unlimited scans + AI verdict + top holders.\n\n` +
     `Get your key at trenchreads.vercel.app (5 USDC one-time)\n` +
     `Then run: <code>/activate tr_yourkey</code>`
   );
@@ -203,10 +216,8 @@ async function handleStatus(chatId) {
 
 // ── Main scan handler ──────────────────────────────────────────────────────
 async function handleScan(chatId, address) {
-  // Check pro status
   const isPro = await isTelegramPro(chatId);
 
-  // Free limit check
   if (!isPro) {
     const limit = await checkTelegramFreeLimit(chatId);
     if (!limit.allowed) {
@@ -218,7 +229,6 @@ async function handleScan(chatId, address) {
         `Limit resets at midnight UTC.`
       );
     }
-    // Show remaining notice on last free scan
     if (limit.remaining === 0) {
       await sendMsg(chatId, `⚠️ This is your last free scan today. Upgrade at trenchreads.vercel.app`);
     }
@@ -229,15 +239,17 @@ async function handleScan(chatId, address) {
 
   try {
     const d = await checkToken(address, null);
-    if (!d || (!d.dex && !d.score)) {
+    if (d?.error) {
+      return sendMsg(chatId, `❌ ${d.error}`);
+    }
+    if (!d || (!d.dex && d.score === undefined)) {
       return sendMsg(chatId, '❌ No data found for this address. Double-check the contract address.');
     }
     await sendMsg(chatId, buildMessage(d, address, isPro));
 
-    // Show upgrade nudge to free users
     if (!isPro) {
       await sendMsg(chatId,
-        `💡 <b>Unlock Pro</b> for unlimited scans + smart wallet signals + dev holdings.\n` +
+        `💡 <b>Unlock Pro</b> for unlimited scans + AI verdict + top holder list + dev holdings.\n` +
         `5 USDC one-time → trenchreads.vercel.app`
       );
     }
@@ -252,7 +264,6 @@ async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const text   = msg.text.trim();
 
-  // Commands
   if (text === '/start' || text === '/help') {
     return sendMsg(chatId, startMessage());
   }
@@ -266,7 +277,6 @@ async function handleMessage(msg) {
     return handleStatus(chatId);
   }
 
-  // Token address — direct paste or /check command
   const address = text.startsWith('/check ')
     ? text.replace('/check ', '').trim()
     : text;
@@ -278,7 +288,6 @@ async function handleMessage(msg) {
     return handleScan(chatId, address);
   }
 
-  // Unknown input
   await sendMsg(chatId,
     `❓ Send a token contract address to scan it, or type /help to see commands.`
   );
@@ -299,7 +308,7 @@ async function poll(offset = 0) {
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function start() {
   await setupDB();
-  console.log('✅ TrenchReads bot running — pro integration active');
+  console.log('✅ TrenchReads bot running — synced with web scoring engine');
   while (true) {
     try { await poll(); }
     catch (e) {
