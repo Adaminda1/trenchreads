@@ -204,6 +204,37 @@ header p{margin-top:4px;font-size:12px;color:var(--mu)}
 #cpb{background:var(--sur2)}
 #ft{font-size:10px;color:var(--mu);margin-top:8px}
 
+/* ── API Section ── */
+#api-section{max-width:680px;margin:0 auto 48px;padding:0 16px}
+.api-header{text-align:center;padding:40px 0 28px}
+.api-header h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:6px}
+.api-badge{display:inline-block;background:linear-gradient(90deg,var(--ac2),var(--ac));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.api-header p{font-size:12px;color:var(--mu);max-width:480px;margin:0 auto}
+.api-tiers{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.tier{background:var(--sur);border:1px solid var(--bor);border-radius:10px;padding:16px 14px;position:relative;transition:border-color .2s}
+.tier:hover{border-color:var(--ac2)}
+.tier.popular{border-color:rgba(153,69,255,.5);background:linear-gradient(160deg,rgba(153,69,255,.08),var(--sur))}
+.tier-pop-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--ac2);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;letter-spacing:.5px}
+.tier-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--mu);margin-bottom:6px}
+.tier-price{font-size:20px;font-weight:800;color:#fff;line-height:1}
+.tier-price span{font-size:11px;font-weight:400;color:var(--mu)}
+.tier-calls{font-size:11px;color:var(--ac);font-weight:600;margin:6px 0 10px}
+.tier-features{list-style:none;display:flex;flex-direction:column;gap:4px}
+.tier-features li{font-size:10px;color:var(--mu);display:flex;align-items:center;gap:5px}
+.tier-features li::before{content:'✓';color:var(--ac);font-weight:700;flex-shrink:0}
+.api-code{background:var(--sur2);border:1px solid var(--bor);border-radius:8px;padding:14px 16px;margin-bottom:16px;overflow-x:auto}
+.api-code pre{font-family:var(--mono);font-size:11px;color:var(--text);line-height:1.7;white-space:pre}
+.api-code .cm{color:var(--mu)}
+.api-code .ck{color:var(--ac2)}
+.api-code .cs{color:var(--ac)}
+.api-code .cn{color:var(--warn)}
+.api-cta{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.api-btn-primary{background:var(--ac2);color:#fff;border:none;border-radius:7px;padding:11px 24px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:opacity .2s}
+.api-btn-primary:hover{opacity:.85;text-decoration:none;color:#fff}
+.api-btn-secondary{background:var(--sur);color:var(--text);border:1px solid var(--bor);border-radius:7px;padding:11px 24px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:border-color .2s}
+.api-btn-secondary:hover{border-color:var(--ac);color:var(--ac);text-decoration:none}
+.api-divider{border:none;border-top:1px solid var(--bor);margin:0 0 28px}
+
 /* Footer */
 footer{text-align:center;padding:20px 16px 32px;font-size:11px;color:var(--mu);border-top:1px solid var(--bor)}
 footer a{font-size:11px}
@@ -215,6 +246,7 @@ footer a{font-size:11px}
   .mg{grid-template-columns:repeat(2,1fr)}
   #holdersEl .holder-row{grid-template-columns:24px 1fr 48px}
   .h-bar-wrap{display:none}
+  .api-tiers{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -390,6 +422,89 @@ footer a{font-size:11px}
 
 </div><!-- /res -->
 
+<!-- ── B2B API Section ── -->
+<div id="api-section">
+  <hr class="api-divider"/>
+  <div class="api-header">
+    <div class="api-badge">🔌 Verdict API</div>
+    <h2>Plug TrenchReads into your bot or tool</h2>
+    <p>One POST request. Get a risk score, AI verdict, and security flags for any Solana or EVM token. Built for bot devs, KOLs, and trading dashboards.</p>
+  </div>
+
+  <!-- Pricing tiers -->
+  <div class="api-tiers">
+    <div class="tier">
+      <div class="tier-name">Free</div>
+      <div class="tier-price">$0<span>/mo</span></div>
+      <div class="tier-calls">50 calls/day</div>
+      <ul class="tier-features">
+        <li>Risk score + verdict</li>
+        <li>Security flags</li>
+        <li>Liq/MCap ratio</li>
+        <li>Test &amp; integrate</li>
+      </ul>
+    </div>
+    <div class="tier popular">
+      <div class="tier-pop-badge">MOST POPULAR</div>
+      <div class="tier-name">Builder</div>
+      <div class="tier-price">$29<span>/mo</span></div>
+      <div class="tier-calls">2,000 calls/day</div>
+      <ul class="tier-features">
+        <li>Everything in Free</li>
+        <li>AI verdict text</li>
+        <li>Top holder data</li>
+        <li>Priority support</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <div class="tier-name">Growth</div>
+      <div class="tier-price">$79<span>/mo</span></div>
+      <div class="tier-calls">10,000 calls/day</div>
+      <ul class="tier-features">
+        <li>Everything in Builder</li>
+        <li>Multi-chain support</li>
+        <li>Usage analytics</li>
+        <li>SLA guarantee</li>
+      </ul>
+    </div>
+    <div class="tier">
+      <div class="tier-name">Scale</div>
+      <div class="tier-price">$199<span>/mo</span></div>
+      <div class="tier-calls">50,000 calls/day</div>
+      <ul class="tier-features">
+        <li>Everything in Growth</li>
+        <li>Overage at $0.015/call</li>
+        <li>Custom integration</li>
+        <li>Direct line to dev</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Code snippet -->
+  <div class="api-code">
+    <pre><span class="cm">// One request. Full verdict.</span>
+<span class="ck">const</span> res = <span class="ck">await</span> fetch(<span class="cs">'https://trenchreads.vercel.app/api/v1/verdict'</span>, {
+  method: <span class="cs">'POST'</span>,
+  headers: { <span class="cs">'X-API-Key'</span>: <span class="cs">'tr_api_yourkey'</span> },
+  body: JSON.stringify({ address: tokenCA })
+});
+<span class="ck">const</span> { score, risk_level, verdict, flags, ai_verdict } = <span class="ck">await</span> res.json();
+<span class="cm">// score: 34 | risk_level: "HIGH" | verdict: "HIGH RISK – AVOID"</span>
+<span class="cm">// flags: ["Rug Exit Risk 0.34% Liq/MCap", "Mintable Supply"]</span>
+<span class="cm">// ai_verdict: "Only 0.34% of mcap is liquid — avoid."</span></pre>
+  </div>
+
+  <!-- CTAs -->
+  <div class="api-cta">
+    <a href="https://t.me/Web3Abdull" target="_blank" rel="noopener" class="api-btn-primary">
+      🔑 Get API Key — DM @Web3Abdull
+    </a>
+    <a href="https://t.me/Web3Abdull" target="_blank" rel="noopener" class="api-btn-secondary">
+      📄 View Docs
+    </a>
+  </div>
+</div>
+
 <!-- Footer -->
 <footer>
   TrenchReads · built by
@@ -514,19 +629,15 @@ async function run() {
     const S = await callProxy(ca);
     hideLoad();
     if (S.error) {
-  const msgs = {
-    free_limit_reached: '⛔ Daily limit reached (3 scans/day). Upgrade to Pro for unlimited scans — 5 USDC one-time.',
-    CA_required: '⚠️ Please enter a valid token address.',
-  };
-  showErr(msgs[S.error] || S.error);
-  return;
-}
-    try {
-      render(S);
-    } catch(e) {
-      console.error('Render error:', e.message, e.stack);
-      showErr('Display error: ' + e.message);
+      const msgs = {
+        free_limit_reached: '⛔ Daily limit reached (3 scans/day). Upgrade to Pro for unlimited scans — 5 USDC one-time.',
+        CA_required: '⚠️ Please enter a valid token address.',
+      };
+      showErr(msgs[S.error] || S.error);
+      return;
     }
+    try { render(S); }
+    catch(e) { console.error('Render error:', e.message, e.stack); showErr('Display error: ' + e.message); }
   } catch(e) {
     hideLoad();
     showErr('Request failed — check your connection and try again.');
@@ -564,79 +675,6 @@ function hideLoad() {
   stepTimers.forEach(clearTimeout); stepTimers = [];
 }
 
-// ── calcScore ──────────────────────────────────────────────────────────────
-function calcScore(dex, sec) {
-  let s = 100;
-  const liq  = dex?.liquidity ?? 0;
-  const mcap = dex?.mcap ?? 0;
-  const vol  = dex?.volume24h ?? 0;
-  const age  = dex?.ageDays;
-  const buys = dex?.buys24h ?? 0;
-  const sells = dex?.sells24h ?? 0;
-
-  // Trading activity
-  if (buys === 0 && sells === 0 && liq > 0) { s -= 30; }
-  else {
-    if (vol < 50 && liq > 0)   s -= 20;
-    else if (vol < 500)        s -= 8;
-    // Sell pressure
-    if (buys > 0 && sells > 0) {
-      const ratio = sells / (buys + sells);
-      if (ratio > 0.8)       s -= 10;
-      else if (ratio > 0.65) s -= 5;
-    }
-  }
-
-  // Micro mcap
-  if (mcap > 0 && mcap < 5000) s -= 10;
-
-  // Mint authority
-  if (sec?.mintAuth === 'RISK')   s -= 15;
-  else if (sec?.mintAuth === 'safe') s -= 0;
-  else                             s -= 4;
-
-  // Freeze / honeypot
-  if (sec?.freezeAuth === 'RISK') s -= 10;
-  if (sec?.honeypot === 'DETECTED') s -= 20;
-
-  // Hidden functions
-  if (sec?.isBlacklisted === 'RISK')     s -= 8;
-  if (sec?.transferPausable === 'RISK')  s -= 8;
-  if (sec?.hiddenOwner === 'RISK')       s -= 8;
-  if (sec?.canTakeBack === 'RISK')       s -= 8;
-  if (sec?.isProxy)                      s -= 5;
-
-  // Sell tax
-  const st = sec?.sellTax ? parseFloat(sec.sellTax) : 0;
-  if (st > 10) s -= 10;
-
-  // Holder concentration
-  const top10 = sec?.top10HolderPct ? parseFloat(sec.top10HolderPct) : null;
-  const creatorPct = sec?.creatorPct ? parseFloat(sec.creatorPct) : null;
-  if (top10 !== null) {
-    if (top10 > 80) s -= 15;
-    else if (top10 > 60) s -= 10;
-    else if (top10 > 40) s -= 5;
-  }
-  if (creatorPct !== null && creatorPct > 10) s -= 10;
-  else if (creatorPct !== null && creatorPct > 5) s -= 5;
-
-  s = Math.max(0, Math.min(100, Math.round(s)));
-
-  // Missing critical check
-  const missingCritical = (sec?.freezeAuth !== 'RISK' && sec?.freezeAuth !== 'safe') ||
-                          (sec?.honeypot !== 'DETECTED' && sec?.honeypot !== 'none');
-  if (missingCritical && s > 85) s = 85;
-
-  let verdict, cls;
-  if (s >= 70)      { verdict = 'RELATIVELY SAFE';       cls = 'safe'; }
-  else if (s >= 45) { verdict = 'PROCEED WITH CAUTION';  cls = 'warn'; }
-  else              { verdict = 'HIGH RISK – AVOID';      cls = 'danger'; }
-
-  const bd = buildFlags(dex, sec, s);
-  return { score: s, verdict, cls, bd };
-}
-
 // ── buildFlags ─────────────────────────────────────────────────────────────
 function buildFlags(dex, sec, sc) {
   const flags = [];
@@ -648,9 +686,7 @@ function buildFlags(dex, sec, sc) {
   const sells = dex?.sells24h ?? 0;
   const top10 = sec?.top10HolderPct ? parseFloat(sec.top10HolderPct) : null;
   const creatorPct = sec?.creatorPct ? parseFloat(sec.creatorPct) : null;
-  const ownerPct   = sec?.ownerPct   ? parseFloat(sec.ownerPct)   : null;
 
-  // CRITICAL
   if (sec?.honeypot === 'DETECTED')
     flags.push({ ic:'🚨', t:'Honeypot Detected', tc:'rd', d:'You can buy but you CANNOT sell. Your funds are permanently trapped.', sev:4 });
   if (buys === 0 && sells === 0 && liq > 0)
@@ -658,81 +694,52 @@ function buildFlags(dex, sec, sc) {
   if (liq === 0)
     flags.push({ ic:'🚨', t:'No Liquidity Found', tc:'rd', d:'No liquidity detected. This token cannot be traded or has already been fully rugged.', sev:4 });
   if (sec?.mintAuth === 'RISK')
-    flags.push({ ic:'🚨', t:'Mint Authority Active', tc:'rd', d:'Developer can print unlimited new tokens at any time and dump them on holders. Massive red flag.', sev:3 });
+    flags.push({ ic:'🚨', t:'Mint Authority Active', tc:'rd', d:'Developer can print unlimited new tokens at any time and dump them on holders.', sev:3 });
   if (sec?.freezeAuth === 'RISK')
     flags.push({ ic:'🚨', t:'Freeze Authority Active', tc:'rd', d:'Developer can freeze your wallet and prevent you from moving or selling your tokens.', sev:3 });
   if (sec?.isBlacklisted === 'RISK')
     flags.push({ ic:'🚨', t:'Blacklist Function Detected', tc:'rd', d:'Developer can blacklist specific wallets, permanently blocking them from selling.', sev:3 });
   if (sec?.transferPausable === 'RISK')
-    flags.push({ ic:'🚨', t:'Transfer Pausable', tc:'rd', d:'Developer can pause all token transfers. Nobody can buy, sell, or move tokens when paused.', sev:3 });
+    flags.push({ ic:'🚨', t:'Transfer Pausable', tc:'rd', d:'Developer can pause all token transfers.', sev:3 });
   if (sec?.hiddenOwner === 'RISK')
-    flags.push({ ic:'🚨', t:'Hidden Owner Detected', tc:'rd', d:'Contract has a hidden owner with anonymous control. Identity is concealed on purpose.', sev:3 });
+    flags.push({ ic:'🚨', t:'Hidden Owner Detected', tc:'rd', d:'Contract has a hidden owner with anonymous control.', sev:3 });
   if (sec?.canTakeBack === 'RISK')
     flags.push({ ic:'🚨', t:'Owner Can Reclaim Contract', tc:'rd', d:'Previous owner can take back full control of this contract at any time.', sev:3 });
   if (creatorPct !== null && creatorPct > 10)
-    flags.push({ ic:'🚨', t:`Dev Holds ${creatorPct}% of Supply`, tc:'rd', d:`Creator wallet controls ${creatorPct}% of total supply. One sell from dev can crash the price.`, sev:3 });
+    flags.push({ ic:'🚨', t:`Dev Holds ${creatorPct}% of Supply`, tc:'rd', d:`Creator wallet controls ${creatorPct}% of total supply.`, sev:3 });
   if (top10 !== null && top10 > 80)
-    flags.push({ ic:'🚨', t:`Top 10 Wallets Hold ${top10}% of Supply`, tc:'rd', d:`Extreme concentration. 10 wallets control ${top10}% of supply. Coordinated dump can wipe the chart.`, sev:3 });
+    flags.push({ ic:'🚨', t:`Top 10 Wallets Hold ${top10}%`, tc:'rd', d:`Extreme concentration. 10 wallets control ${top10}% of supply.`, sev:3 });
   if (liq > 0 && liq < 2000)
-    flags.push({ ic:'🚨', t:`Critically Low Liquidity ($${ f(liq) })`, tc:'rd', d:`Only $${ f(liq) } in liquidity. A single medium sell will crash the price instantly.`, sev:3 });
-
-  // RUG EXIT RISK FLAG
+    flags.push({ ic:'🚨', t:`Critically Low Liquidity ($${f(liq)})`, tc:'rd', d:`Only $${f(liq)} in liquidity. A single medium sell will crash the price instantly.`, sev:3 });
   if (liq > 0 && mcap > 0) {
     const rugRatio = (liq / mcap) * 100;
     if (rugRatio < 1 && vol > 100)
-      flags.push({ ic:'🚨', t:`Rug Exit Risk – ${ rugRatio.toFixed(2) }% Liq/MCap`, tc:'rd', d:`Only ${ rugRatio.toFixed(2) }% of the market cap sits in the liquidity pool. In plain terms: insiders holding large bags can dump everything and still get a decent exit price. You – a smaller holder – will be left with massive slippage or no exit at all.`, sev:3 });
+      flags.push({ ic:'🚨', t:`Rug Exit Risk – ${rugRatio.toFixed(2)}% Liq/MCap`, tc:'rd', d:`Only ${rugRatio.toFixed(2)}% of mcap sits in liquidity. Insiders can exit clean. You may not.`, sev:3 });
     else if (rugRatio < 3 && vol > 100)
-      flags.push({ ic:'🟡', t:`Low Rug Buffer – ${ rugRatio.toFixed(1) }% Liq/MCap`, tc:'yl', d:`${ rugRatio.toFixed(1) }% liq/mcap means the liquidity cushion is thin. Big wallet holders can exit faster than you. If whales sell, the price drops sharply before you can react.`, sev:2 });
+      flags.push({ ic:'🟡', t:`Low Rug Buffer – ${rugRatio.toFixed(1)}% Liq/MCap`, tc:'yl', d:`${rugRatio.toFixed(1)}% liq/mcap is thin. Whales can exit faster than you.`, sev:2 });
   }
-
-  // WARNINGS
   const st = sec?.sellTax ? parseFloat(sec.sellTax) : 0;
-  if (st > 10)
-    flags.push({ ic:'🟡', t:`High Sell Tax (${ sec.sellTax }%)`, tc:'yl', d:`You lose ${ sec.sellTax }% every time you sell. This is designed to punish sellers and trap liquidity.`, sev:2 });
-  else if (st > 5)
-    flags.push({ ic:'🟡', t:`Elevated Sell Tax (${ sec.sellTax }%)`, tc:'yl', d:`Sell tax of ${ sec.sellTax }% is above normal. Factor this into your exit strategy.`, sev:2 });
-  if (sec?.isProxy === 'yes')
-    flags.push({ ic:'🟡', t:'Proxy / Upgradeable Contract', tc:'yl', d:'Contract logic can be changed after deployment. Rules you see today may not apply tomorrow.', sev:2 });
-  if (top10 !== null && top10 > 60 && top10 <= 80)
-    flags.push({ ic:'🟡', t:`Top 10 Hold ${ top10 }% – High Concentration`, tc:'yl', d:`Top 10 wallets control ${ top10 }% of supply. Whale movements can heavily impact price.`, sev:2 });
-  if (creatorPct !== null && creatorPct > 5 && creatorPct <= 10)
-    flags.push({ ic:'🟡', t:`Dev Holds ${ creatorPct }% of Supply`, tc:'yl', d:`Creator wallet holds ${ creatorPct }% of supply. Monitor dev wallet closely for sell activity.`, sev:2 });
-  if (liq > 0 && liq < 10000 && liq >= 2000)
-    flags.push({ ic:'🟡', t:`Low Liquidity ($${ f(liq) })`, tc:'yl', d:`$${ f(liq) } is low for a trading token. Large sells will significantly move the price.`, sev:2 });
-  if (age !== null && age < 1)
-    flags.push({ ic:'🟡', t:`Brand New Token (${ dex.ageHours }h old)`, tc:'yl', d:`Token launched less than 24 hours ago. No track record whatsoever. Extreme risk.`, sev:2 });
-  else if (age !== null && age < 3)
-    flags.push({ ic:'🟡', t:`Very New Token (${ age }d old)`, tc:'yl', d:`Token is under 3 days old. No proven stability or legitimate use case established.`, sev:2 });
-  if (buys > 0 && sells > 0 && (sells / (buys + sells)) > 0.75)
-    flags.push({ ic:'🟡', t:'Heavy Sell Pressure', tc:'yl', d:`${ ((sells / (buys + sells)) * 100).toFixed(0) }% of transactions are sells. Strong distribution signal.`, sev:2 });
-  if (sec?.isOpenSource === 'no')
-    flags.push({ ic:'🟡', t:'Contract Not Verified / Open Source', tc:'yl', d:'Source code is not publicly verified. Cannot audit what the contract actually does.', sev:2 });
-  if (mcap > 0 && mcap < 5000)
-    flags.push({ ic:'🟡', t:`Micro Cap ($$${ f(mcap) })`, tc:'yl', d:`Market cap under $5K. One medium sell can wipe this entirely.`, sev:2 });
-
-  // POSITIVE FLAGS
-  if (sec?.mintAuth === 'safe')
-    flags.push({ ic:'✅', t:'Mint Authority Revoked', tc:'gr', d:'Developer cannot create new tokens. Total supply is permanently fixed.', sev:0 });
-  if (sec?.freezeAuth === 'safe')
-    flags.push({ ic:'✅', t:'Freeze Authority Disabled', tc:'gr', d:'Developer cannot freeze your wallet or tokens.', sev:0 });
-  if (sec?.honeypot === 'none')
-    flags.push({ ic:'✅', t:'No Honeypot Detected', tc:'gr', d:'You can buy and sell freely. No sell restriction found.', sev:0 });
-  if (liq > 50000)
-    flags.push({ ic:'✅', t:`Strong Liquidity ($$${ f(liq) })`, tc:'gr', d:'Healthy liquidity pool. Difficult to manipulate price with single trades.', sev:0 });
-  if (age !== null && age >= 30)
-    flags.push({ ic:'✅', t:`Established Token (${ age }d old)`, tc:'gr', d:'Token has survived over a month. Reduced chance of a quick rug.', sev:0 });
-  if (top10 !== null && top10 < 30)
-    flags.push({ ic:'✅', t:`Well Distributed (Top 10 = ${ top10 }%)`, tc:'gr', d:'Supply is spread across many holders. Reduced whale manipulation risk.', sev:0 });
-  if (dex?.dexPaid)
-    flags.push({ ic:'✅', t:'DEX Screener Boost Active', tc:'gr', d:'Team paid to promote this token on DexScreener. Shows some financial commitment.', sev:0 });
-  if (dex?.socials?.twitter)
-    flags.push({ ic:'✅', t:'Twitter / X Account Linked', tc:'gr', d:'Project has a linked Twitter account. Adds some accountability.', sev:0 });
-  if (dex?.socials?.telegram)
-    flags.push({ ic:'✅', t:'Telegram Community Linked', tc:'gr', d:'Project has a Telegram community. Community presence is a positive signal.', sev:0 });
-
-  if (!flags.length)
-    flags.push({ ic:'🔍', t:'Limited Data Available', tc:'mu', d:'Security data could not be retrieved. Check manually on DexScreener and GoPlus before trading.', sev:1 });
-
+  if (st > 10) flags.push({ ic:'🟡', t:`High Sell Tax (${sec.sellTax}%)`, tc:'yl', d:`You lose ${sec.sellTax}% every time you sell.`, sev:2 });
+  else if (st > 5) flags.push({ ic:'🟡', t:`Elevated Sell Tax (${sec.sellTax}%)`, tc:'yl', d:`Sell tax of ${sec.sellTax}% is above normal.`, sev:2 });
+  if (sec?.isProxy === 'yes') flags.push({ ic:'🟡', t:'Proxy / Upgradeable Contract', tc:'yl', d:'Contract logic can be changed after deployment.', sev:2 });
+  if (top10 !== null && top10 > 60 && top10 <= 80) flags.push({ ic:'🟡', t:`Top 10 Hold ${top10}% – High Concentration`, tc:'yl', d:`Top 10 wallets control ${top10}% of supply.`, sev:2 });
+  if (creatorPct !== null && creatorPct > 5 && creatorPct <= 10) flags.push({ ic:'🟡', t:`Dev Holds ${creatorPct}% of Supply`, tc:'yl', d:`Creator wallet holds ${creatorPct}% of supply.`, sev:2 });
+  if (liq > 0 && liq < 10000 && liq >= 2000) flags.push({ ic:'🟡', t:`Low Liquidity ($${f(liq)})`, tc:'yl', d:`$${f(liq)} is low for a trading token.`, sev:2 });
+  if (age !== null && age < 1) flags.push({ ic:'🟡', t:`Brand New Token (${dex.ageHours}h old)`, tc:'yl', d:'Token launched less than 24 hours ago. Extreme risk.', sev:2 });
+  else if (age !== null && age < 3) flags.push({ ic:'🟡', t:`Very New Token (${age}d old)`, tc:'yl', d:'Token is under 3 days old. No proven stability.', sev:2 });
+  if (buys > 0 && sells > 0 && (sells / (buys + sells)) > 0.75) flags.push({ ic:'🟡', t:'Heavy Sell Pressure', tc:'yl', d:`${((sells/(buys+sells))*100).toFixed(0)}% of transactions are sells.`, sev:2 });
+  if (sec?.isOpenSource === 'no') flags.push({ ic:'🟡', t:'Contract Not Verified / Open Source', tc:'yl', d:'Source code is not publicly verified.', sev:2 });
+  if (mcap > 0 && mcap < 5000) flags.push({ ic:'🟡', t:`Micro Cap ($${f(mcap)})`, tc:'yl', d:'Market cap under $5K. One medium sell can wipe this entirely.', sev:2 });
+  if (sec?.mintAuth === 'safe') flags.push({ ic:'✅', t:'Mint Authority Revoked', tc:'gr', d:'Developer cannot create new tokens. Total supply is permanently fixed.', sev:0 });
+  if (sec?.freezeAuth === 'safe') flags.push({ ic:'✅', t:'Freeze Authority Disabled', tc:'gr', d:'Developer cannot freeze your wallet or tokens.', sev:0 });
+  if (sec?.honeypot === 'none') flags.push({ ic:'✅', t:'No Honeypot Detected', tc:'gr', d:'You can buy and sell freely. No sell restriction found.', sev:0 });
+  if (liq > 50000) flags.push({ ic:'✅', t:`Strong Liquidity ($${f(liq)})`, tc:'gr', d:'Healthy liquidity pool. Difficult to manipulate price with single trades.', sev:0 });
+  if (age !== null && age >= 30) flags.push({ ic:'✅', t:`Established Token (${age}d old)`, tc:'gr', d:'Token has survived over a month. Reduced chance of a quick rug.', sev:0 });
+  if (top10 !== null && top10 < 30) flags.push({ ic:'✅', t:`Well Distributed (Top 10 = ${top10}%)`, tc:'gr', d:'Supply is spread across many holders.', sev:0 });
+  if (dex?.dexPaid) flags.push({ ic:'✅', t:'DEX Screener Boost Active', tc:'gr', d:'Team paid to promote this token on DexScreener.', sev:0 });
+  if (dex?.socials?.twitter) flags.push({ ic:'✅', t:'Twitter / X Account Linked', tc:'gr', d:'Project has a linked Twitter account.', sev:0 });
+  if (dex?.socials?.telegram) flags.push({ ic:'✅', t:'Telegram Community Linked', tc:'gr', d:'Project has a Telegram community.', sev:0 });
+  if (!flags.length) flags.push({ ic:'🔍', t:'Limited Data Available', tc:'mu', d:'Security data could not be retrieved. Check manually on DexScreener and GoPlus before trading.', sev:1 });
   return flags.sort((a,b) => b.sev - a.sev);
 }
 
@@ -745,8 +752,6 @@ function render(S) {
     cls: (S.score || 0) >= 70 ? 'safe' : (S.score || 0) >= 45 ? 'warn' : 'danger',
     bd: S.breakdown || []
   };
-
-  // Normalize field names from API
   const liq    = dex?.liquidity || 0;
   const mcap   = dex?.marketCap || 0;
   const vol    = dex?.volume24h || 0;
@@ -757,53 +762,25 @@ function render(S) {
   const ageMs  = dex?.createdAt ? Date.now() - dex.createdAt : null;
   const ageDays = ageMs ? Math.floor(ageMs / 86400000) : null;
   const ageHours = ageMs ? Math.floor(ageMs / 3600000) : null;
-
-  // Normalize sec fields
   const mintAuth   = sec?.mintAuthority === null ? 'safe' : sec?.mintAuthority ? 'RISK' : 'unknown';
   const freezeAuth = sec?.freezeAuthority === null ? 'safe' : sec?.freezeAuthority ? 'RISK' : 'unknown';
   const honeypot   = sec?.isHoneypot === false ? 'none' : sec?.isHoneypot === true ? 'DETECTED' : 'unknown';
   const holders    = sec?.holderCount || sec?.holders || null;
-
-  // Build flags from normalized data
   const flags = buildFlags(
-    { liquidity: liq, mcap, volume24h: vol, buys24h: buys, sells24h: sells,
-      ageDays, ageHours, socials: dex?.socials, dexPaid: dex?.dexPaid, dex: dex?.dexId },
-    { mintAuth, freezeAuth, honeypot,
-      isBlacklisted: sec?.isBlacklisted ? 'RISK' : null,
-      transferPausable: sec?.transferPausable ? 'RISK' : null,
-      hiddenOwner: sec?.canTakeBackOwnership ? 'RISK' : null,
-      isOpenSource: sec?.isOpenSource ? 'yes' : 'no',
-      top10HolderPct: sec?.top10HolderPct,
-      creatorPct: sec?.creatorPct,
-      sellTax: sec?.sellTax },
+    { liquidity: liq, mcap, volume24h: vol, buys24h: buys, sells24h: sells, ageDays, ageHours, socials: dex?.socials, dexPaid: dex?.dexPaid, dex: dex?.dexId },
+    { mintAuth, freezeAuth, honeypot, isBlacklisted: sec?.isBlacklisted ? 'RISK' : null, transferPausable: sec?.transferPausable ? 'RISK' : null, hiddenOwner: sec?.canTakeBackOwnership ? 'RISK' : null, isOpenSource: sec?.isOpenSource ? 'yes' : 'no', top10HolderPct: sec?.top10HolderPct, creatorPct: sec?.creatorPct, sellTax: sec?.sellTax },
     sc.score
   );
-
-  // Show results
   document.getElementById('res').style.display = 'block';
-
-  // Verdict card
   document.getElementById('vc').className = `vc ${sc.cls}`;
   document.getElementById('vnum').textContent = sc.score;
   document.getElementById('vt').textContent = dex?.name || ca.slice(0,8);
   document.getElementById('vtsym').textContent = dex?.symbol ? ` $${dex.symbol}` : '';
-  const verdictMap = {
-    safe:   'RELATIVELY SAFE',
-    warn:   'PROCEED WITH CAUTION',
-    danger: 'HIGH RISK – AVOID'
-  };
+  const verdictMap = { safe:'RELATIVELY SAFE', warn:'PROCEED WITH CAUTION', danger:'HIGH RISK – AVOID' };
   document.getElementById('vvt').textContent = sc.verdict || verdictMap[sc.cls] || 'PROCEED WITH CAUTION';
-  document.getElementById('vs').textContent = {
-    safe:   'no major red flags detected',
-    warn:   'some risks present — dyor before aping',
-    danger: 'significant risks detected — avoid'
-  }[sc.cls] || 'some risks present — dyor before aping';
-
-  // Chain badge
+  document.getElementById('vs').textContent = { safe:'no major red flags detected', warn:'some risks present — dyor before aping', danger:'significant risks detected — avoid' }[sc.cls] || 'some risks present — dyor before aping';
   const cbl = document.getElementById('cbl');
   if (cbl) { cbl.textContent = ch === 'solana' ? 'SOL' : ch || 'SOL'; }
-
-  // Socials
   const soc = dex?.socials;
   if (soc?.twitter || soc?.telegram || soc?.website || dex?.pairUrl) {
     document.getElementById('socialsBar').style.display = 'flex';
@@ -812,22 +789,27 @@ function render(S) {
     if (soc?.website)  { const a = document.getElementById('lkWeb');  a.href = soc.website;   a.style.display = 'inline'; }
     if (dex?.pairUrl)  { const a = document.getElementById('lkChart');a.href = dex.pairUrl;   a.style.display = 'inline'; }
   }
-
-  // Smart wallets
   if (S.smartWallets && S.smartWallets.count > 0) {
     const swb = document.getElementById('swb');
     if (swb) { swb.style.display = 'block'; swb.textContent = `💰 ${S.smartWallets.count} known smart wallet${S.smartWallets.count > 1 ? 's' : ''} bought in last 6h`; }
   }
 
-  // Flags
+  // AI verdict display
+  if (S.ai) {
+    let aiEl = document.getElementById('aiVerdict');
+    if (!aiEl) {
+      aiEl = document.createElement('div');
+      aiEl.id = 'aiVerdict';
+      aiEl.style.cssText = 'font-size:12px;color:var(--mu);margin-top:8px;padding:8px 12px;background:var(--sur2);border-radius:6px;border-left:3px solid var(--ac2);line-height:1.6';
+      document.getElementById('vb2').appendChild(aiEl);
+    }
+    aiEl.textContent = '🤖 ' + S.ai;
+  }
+
   document.getElementById('flagsEl').innerHTML = flags.length ? flags.map(fl =>
-    `<div class="flag ${fl.tc}">
-      <div class="fic">${fl.ic}</div>
-      <div class="fb"><div class="ft">${fl.t}</div><div class="fd">${fl.d}</div></div>
-    </div>`
+    `<div class="flag ${fl.tc}"><div class="fic">${fl.ic}</div><div class="fb"><div class="ft">${fl.t}</div><div class="fd">${fl.d}</div></div></div>`
   ).join('') : '<div class="flag mu"><div class="fic">🔍</div><div class="fb"><div class="ft">Scanning complete</div><div class="fd">No critical flags detected.</div></div></div>';
 
-  // Market grid
   const mktEl = document.getElementById('mktEl');
   if (mktEl) mktEl.innerHTML = [
     { l:'Price',      v: price ? `$${price < 0.000001 ? price.toExponential(3) : price < 0.01 ? price.toFixed(8) : price.toFixed(4)}` : 'n/a' },
@@ -842,7 +824,6 @@ function render(S) {
     { l:'Sells 24h',  v: sells ? sells.toLocaleString() : 'n/a' },
   ].map(c => `<div class="mc"><div class="mn">${c.l}</div><div class="mv">${c.v}</div></div>`).join('');
 
-  // Buy/sell strip
   const mBS = document.getElementById('mBS');
   if (mBS && (buys > 0 || sells > 0)) {
     const ratio = sells / (buys + sells);
@@ -850,7 +831,6 @@ function render(S) {
     mBS.style.color = ratio > 0.75 ? 'var(--dan)' : ratio > 0.6 ? 'var(--warn)' : 'var(--ac)';
   }
 
-  // Holders
   const top10 = sec?.top10HolderPct ? parseFloat(sec.top10HolderPct) : null;
   if (top10 !== null || (sec?.topHolders && sec.topHolders.length > 0)) {
     document.getElementById('holderSec').style.display = 'block';
@@ -867,17 +847,11 @@ function render(S) {
         const addr = h.address || h.account || '–';
         const pctNum = parseFloat(pct);
         const color = pctNum > 20 ? 'var(--dan)' : pctNum > 10 ? 'var(--warn)' : 'var(--ac)';
-        return `<div class="holder-row">
-          <div class="h-rank">#${i+1}</div>
-          <div class="h-addr">${addr.slice(0,6)}...${addr.slice(-4)}</div>
-          <div class="h-bar-wrap"><div class="h-bar" style="width:${Math.min(100,pctNum*5)}%;background:${color}"></div></div>
-          <div class="h-pct" style="color:${color}">${pct}%</div>
-        </div>`;
+        return `<div class="holder-row"><div class="h-rank">#${i+1}</div><div class="h-addr">${addr.slice(0,6)}...${addr.slice(-4)}</div><div class="h-bar-wrap"><div class="h-bar" style="width:${Math.min(100,pctNum*5)}%;background:${color}"></div></div><div class="h-pct" style="color:${color}">${pct}%</div></div>`;
       }).join('');
     }
   }
 
-  // Contract security
   const bh = (c,t) => `<span class="bh ${c}">${t}</span>`;
   const sMint   = document.getElementById('sMint');
   const sFreeze = document.getElementById('sFreeze');
@@ -887,43 +861,19 @@ function render(S) {
   if (sFreeze) sFreeze.innerHTML = freezeAuth === 'safe' ? bh('s','DISABLED') : freezeAuth === 'RISK' ? bh('d','ACTIVE') : bh('n','n/a');
   if (sHoney)  sHoney.innerHTML  = honeypot === 'none' ? bh('s','Clean') : honeypot === 'DETECTED' ? bh('d','HONEYPOT') : bh('n','n/a');
   if (sClose)  sClose.innerHTML  = sec?.closable === 'yes' ? bh('w','Yes') : sec?.closable === 'no' ? bh('s','No') : bh('n','n/a');
+  if (sec?.isBlacklisted !== undefined) { document.getElementById('rBlacklist').style.display = 'flex'; document.getElementById('fBlacklist').innerHTML = sec.isBlacklisted ? bh('d','YES') : bh('s','No'); }
+  if (sec?.transferPausable !== undefined) { document.getElementById('rPause').style.display = 'flex'; document.getElementById('fPause').innerHTML = sec.transferPausable ? bh('d','YES') : bh('s','No'); }
+  if (sec?.canTakeBackOwnership !== undefined) { document.getElementById('rHidden').style.display = 'flex'; document.getElementById('fHidden').innerHTML = sec.canTakeBackOwnership ? bh('d','YES – RISK') : bh('s','No'); }
+  if (sec?.isOpenSource !== undefined) { document.getElementById('rOpen').style.display = 'flex'; document.getElementById('fOpen').innerHTML = sec.isOpenSource ? bh('s','Verified') : bh('w','Unverified'); }
 
-  // Show extra sec rows
-  if (sec?.isBlacklisted !== undefined) {
-    document.getElementById('rBlacklist').style.display = 'flex';
-    document.getElementById('fBlacklist').innerHTML = sec.isBlacklisted ? bh('d','YES') : bh('s','No');
-  }
-  if (sec?.transferPausable !== undefined) {
-    document.getElementById('rPause').style.display = 'flex';
-    document.getElementById('fPause').innerHTML = sec.transferPausable ? bh('d','YES') : bh('s','No');
-  }
-  if (sec?.canTakeBackOwnership !== undefined) {
-    document.getElementById('rHidden').style.display = 'flex';
-    document.getElementById('fHidden').innerHTML = sec.canTakeBackOwnership ? bh('d','YES – RISK') : bh('s','No');
-  }
-  if (sec?.isOpenSource !== undefined) {
-    document.getElementById('rOpen').style.display = 'flex';
-    document.getElementById('fOpen').innerHTML = sec.isOpenSource ? bh('s','Verified') : bh('w','Unverified');
-  }
-
-  // Score breakdown
   document.getElementById('bdEl').innerHTML = (sc.bd || []).length > 0
-    ? sc.bd.map(i =>
-        `<div class="bi">
-          <span class="bi-l">${i.l || i[1] || ''}</span>
-          <div class="bi-bw"><div class="bi-b" style="width:${Math.max(5, 50 + (i.p || i[2] || 0))}%;background:${(i.p||i[2]||0) < 0 ? 'var(--dan)' : 'var(--ac)'}"></div></div>
-          <span class="bi-p" style="color:${(i.p||i[2]||0) < 0 ? 'var(--dan)' : 'var(--ac)'}">${(i.p||i[2]||0) > 0 ? '+' : ''}${i.p||i[2]||0}</span>
-        </div>`
-      ).join('')
+    ? sc.bd.map(i => `<div class="bi"><span class="bi-l">${i.l || i[1] || ''}</span><div class="bi-bw"><div class="bi-b" style="width:${Math.max(5, 50 + (i.p || i[2] || 0))}%;background:${(i.p||i[2]||0) < 0 ? 'var(--dan)' : 'var(--ac)'}"></div></div><span class="bi-p" style="color:${(i.p||i[2]||0) < 0 ? 'var(--dan)' : 'var(--ac)'}">${(i.p||i[2]||0) > 0 ? '+' : ''}${i.p||i[2]||0}</span></div>`).join('')
     : '<div style="font-size:11px;color:var(--mu)">Breakdown not available for this token.</div>';
 
-  // Action links
   document.getElementById('aDex').href  = `https://dexscreener.com/solana/${ca}`;
   document.getElementById('aSol').href  = `https://solscan.io/token/${ca}`;
   document.getElementById('aBird').href = `https://birdeye.so/token/${ca}`;
   document.getElementById('aGop').href  = `https://app.goplus.xyz/token/solana/${ca}`;
-
-  // Timestamp
   document.getElementById('ft').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
 }
 
@@ -959,7 +909,7 @@ function copyIt() {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function set(id, v)    { const e = document.getElementById(id); if (e) e.textContent = v; }
-function bh(c, t)      { return `<span class="bh ${ c }">${ t }</span>`; }
+function bh(c, t)      { return `<span class="bh ${c}">${t}</span>`; }
 function bdg(id, c, t) { const e = document.getElementById(id); if (e) e.innerHTML = bh(c, t); }
 function f(n) { if (!n || isNaN(n)) return '0'; if (n >= 1e9) return (n/1e9).toFixed(2) + 'B'; if (n >= 1e6) return (n/1e6).toFixed(2) + 'M'; if (n >= 1e3) return (n/1e3).toFixed(1) + 'K'; return Number(n).toFixed(2); }
 
@@ -971,6 +921,8 @@ function clearRes() {
   document.getElementById('socialsBar').style.display = 'none';
   ['rBuyTax','rSellTax','rHidden','rBlacklist','rPause','rPProxy','rOpen'].forEach(id => { const e = document.getElementById(id); if(e) e.style.display = 'none'; });
   document.getElementById('vc').className = 'vc';
+  const aiEl = document.getElementById('aiVerdict');
+  if (aiEl) aiEl.remove();
 }
 function showErr(msg) {
   const eb = document.getElementById('eb');
@@ -979,7 +931,6 @@ function showErr(msg) {
   eb.style.display = 'block';
 }
 
-// Allow Enter on CA input
 document.getElementById('ca').addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
 </script>
 </body>
