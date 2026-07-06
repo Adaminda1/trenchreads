@@ -771,10 +771,14 @@ function buildFlags(dex, sec, sc) {
     flags.push({ ic:'🚨', t:`Critically Low Liquidity ($${f(liq)})`, tc:'rd', d:`Only $${f(liq)} in liquidity. A single medium sell will crash the price instantly.`, sev:3 });
   if (liq > 0 && mcap > 0) {
     const rugRatio = (liq / mcap) * 100;
-    if (rugRatio < 1 && vol > 100)
-      flags.push({ ic:'🚨', t:`Rug Exit Risk – ${rugRatio.toFixed(2)}% Liq/MCap`, tc:'rd', d:`Only ${rugRatio.toFixed(2)}% of mcap sits in liquidity. Insiders can exit clean. You may not.`, sev:3 });
-    else if (rugRatio < 3 && vol > 100)
-      flags.push({ ic:'🟡', t:`Low Rug Buffer – ${rugRatio.toFixed(1)}% Liq/MCap`, tc:'yl', d:`${rugRatio.toFixed(1)}% liq/mcap is thin. Whales can exit faster than you.`, sev:2 });
+    if (rugRatio < 0.5)
+      flags.push({ ic:'🚨', t:`Critical Rug Risk — ${rugRatio.toFixed(2)}% Liq/MCap`, tc:'rd', d:`Only ${rugRatio.toFixed(2)}% of mcap is liquid. Severe exit trap — large holders can dump at decent prices while smaller holders face near-zero exit.`, sev:3 });
+    else if (rugRatio < 1)
+      flags.push({ ic:'🚨', t:`Rug Exit Risk — ${rugRatio.toFixed(2)}% Liq/MCap`, tc:'rd', d:`Only ${rugRatio.toFixed(2)}% of mcap sits in liquidity. Large holders can exit at better prices than retail — slippage risk is high on any significant sell.`, sev:3 });
+    else if (rugRatio < 3)
+      flags.push({ ic:'🟡', t:`Low Rug Buffer — ${rugRatio.toFixed(1)}% Liq/MCap`, tc:'yl', d:`Liquidity cushion is thin at ${rugRatio.toFixed(1)}%. Whale sells will move price significantly — size your position carefully.`, sev:2 });
+    else if (rugRatio < 5)
+      flags.push({ ic:'🟡', t:`Thin Liquidity — ${rugRatio.toFixed(1)}% Liq/MCap`, tc:'yl', d:`Liq/MCap of ${rugRatio.toFixed(1)}% is below ideal. Acceptable for small caps but monitor liquidity depth before taking a large position.`, sev:1 });
   }
   const st = sec?.sellTax ? parseFloat(sec.sellTax) : 0;
   if (st > 10) flags.push({ ic:'🟡', t:`High Sell Tax (${sec.sellTax}%)`, tc:'yl', d:`You lose ${sec.sellTax}% every time you sell.`, sev:2 });
