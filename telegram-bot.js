@@ -136,7 +136,7 @@ function buildMessage(d, address, isPro) {
     `${holdersLine}\n\n` +
     `<b>CONTRACT:</b>\n` +
     `${taxLine}Mint: ${sec.mintAuthority ? 'ACTIVE ⚠' : 'Revoked ✅'} | Freeze: ${sec.freezeAuthority ? 'ACTIVE ⚠' : 'Revoked ✅'}\n` +
-    `Honeypot: ${sec.isHoneypot ? 'DETECTED 🔴' : 'Clean ✅'}` +
+    `Honeypot: ${sec.isHoneypot ? 'DETECTED 🔴' : 'Clean ✅'} | LP: ${sec.lpLocked === true ? '🔒 LOCKED' : sec.lpLocked === false ? '⚠️ NOT LOCKED' : 'n/a'}` +
     `${aiLine}\n\n` +
     `CA: <code>${address}</code>\n` +
     `🔗 <a href="https://trenchreads.vercel.app">trenchreads.vercel.app</a>`
@@ -305,6 +305,14 @@ async function poll(offset = 0) {
   return poll(offset);
 }
 
+// ── Tiny HTTP server (keeps Render free tier alive) ───────────────────────
+import http from 'http';
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('TrenchReads bot is running ✅');
+}).listen(PORT, () => console.log(`HTTP keepalive server on port ${PORT}`));
+
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function start() {
   await setupDB();
@@ -319,10 +327,3 @@ async function start() {
 }
 
 start();
-// ── HTTP keepalive server (keeps Render free tier alive) ──────────────────
-import http from 'http';
-const PORT = process.env.PORT || 3000;
-http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('TrenchReads bot is running');
-}).listen(PORT, '0.0.0.0', () => console.log(`Keepalive server on port ${PORT}`));
