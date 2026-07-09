@@ -899,6 +899,7 @@ function render(S) {
   }
 
   const top10 = sec?.top10HolderPct ? parseFloat(sec.top10HolderPct) : null;
+  console.log('[DEBUG holders]', { top10, topHolders: sec?.topHolders, holderCount: sec?.holderCount });
   if (top10 !== null || (sec?.topHolders && sec.topHolders.length > 0)) {
     document.getElementById('holderSec').style.display = 'block';
     const bar = document.querySelector('#concBar div');
