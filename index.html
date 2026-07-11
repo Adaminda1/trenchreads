@@ -402,7 +402,6 @@ footer a{font-size:11px}
     <div class="sec-row" id="rPause"     style="display:none"><span class="sr-l">Transfer Pausable</span><span id="fPause"></span></div>
     <div class="sec-row" id="rPProxy"    style="display:none"><span class="sr-l">Proxy Contract</span> <span id="fProxy"></span></div>
     <div class="sec-row" id="rOpen"      style="display:none"><span class="sr-l">Open Source</span>    <span id="fOpen"></span></div>
-    <div class="sec-row" id="rLP"><span class="sr-l">LP Lock</span><span id="sLP"></span></div>
   </div>
 
   <!-- Score breakdown -->
@@ -802,10 +801,6 @@ function buildFlags(dex, sec, sc) {
   if (dex?.dexPaid) flags.push({ ic:'✅', t:'DEX Screener Boost Active', tc:'gr', d:'Team paid to promote this token on DexScreener.', sev:0 });
   if (dex?.socials?.twitter) flags.push({ ic:'✅', t:'Twitter / X Account Linked', tc:'gr', d:'Project has a linked Twitter account.', sev:0 });
   if (dex?.socials?.telegram) flags.push({ ic:'✅', t:'Telegram Community Linked', tc:'gr', d:'Project has a Telegram community.', sev:0 });
-  if (sec?.lpLocked === true)
-    flags.push({ ic:'🔒', t:`LP Locked${sec?.lpLockedBy ? ' (' + sec.lpLockedBy + ')' : ''}`, tc:'gr', d:'Liquidity is locked — developer cannot remove liquidity and rug. Strong trust signal.', sev:0 });
-  else if (sec?.lpLocked === false)
-    flags.push({ ic:'⚠️', t:'LP Not Locked', tc:'yl', d:'Liquidity is NOT locked. Developer can remove liquidity at any time. Verify before entering.', sev:2 });
   if (!flags.length) flags.push({ ic:'🔍', t:'Limited Data Available', tc:'mu', d:'Security data could not be retrieved. Check manually on DexScreener and GoPlus before trading.', sev:1 });
   return flags.sort((a,b) => b.sev - a.sev);
 }
@@ -942,18 +937,6 @@ function render(S) {
   document.getElementById('aSol').href  = `https://solscan.io/token/${ca}`;
   document.getElementById('aBird').href = `https://birdeye.so/token/${ca}`;
   document.getElementById('aGop').href  = `https://app.goplus.xyz/token/solana/${ca}`;
-  // LP Lock
-  const lpEl = document.getElementById('sLP');
-  if (lpEl) {
-    if (S.sec?.lpLocked === true) {
-      const lockLabel = S.sec?.lpLockedBy ? `LOCKED (${S.sec.lpLockedBy})` : 'LOCKED';
-      lpEl.innerHTML = bh('s', lockLabel);
-    } else if (S.sec?.lpLocked === false) {
-      lpEl.innerHTML = bh('w', 'NOT LOCKED');
-    } else {
-      lpEl.innerHTML = bh('n', 'n/a');
-    }
-  }
 
   document.getElementById('ft').textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
 }

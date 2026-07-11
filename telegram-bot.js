@@ -136,7 +136,7 @@ function buildMessage(d, address, isPro) {
     `${holdersLine}\n\n` +
     `<b>CONTRACT:</b>\n` +
     `${taxLine}Mint: ${sec.mintAuthority ? 'ACTIVE ⚠' : 'Revoked ✅'} | Freeze: ${sec.freezeAuthority ? 'ACTIVE ⚠' : 'Revoked ✅'}\n` +
-    `Honeypot: ${sec.isHoneypot ? 'DETECTED 🔴' : 'Clean ✅'} | LP: ${sec.lpLocked === true ? '🔒 LOCKED' : sec.lpLocked === false ? '⚠️ NOT LOCKED' : 'n/a'}` +
+    `Honeypot: ${sec.isHoneypot ? 'DETECTED 🔴' : 'Clean ✅'}` +
     `${aiLine}\n\n` +
     `CA: <code>${address}</code>\n` +
     `🔗 <a href="https://trenchreads.vercel.app">trenchreads.vercel.app</a>`
