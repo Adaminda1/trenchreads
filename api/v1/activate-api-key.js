@@ -78,8 +78,13 @@ export default async function handler(req, res) {
     const limit     = TIER_LIMITS[tier];
 
     await sql`
-      INSERT INTO api_keys (key, email, owner_name, plan, tier, daily_limit, status, expires_at, tx_signature, renewed_at)
-      VALUES (${key}, ${email}, ${name || null}, 'api', ${tier}, ${limit}, 'active', ${expiresAt}, ${txSignature}, NOW())
+      INSERT INTO api_keys (
+        key, owner_email, owner_name, tier, daily_limit,
+        active, status, expires_at, tx_signature, renewed_at
+      ) VALUES (
+        ${key}, ${email}, ${name || null}, ${tier}, ${limit},
+        TRUE, 'active', ${expiresAt}, ${txSignature}, NOW()
+      )
     `;
 
     return res.status(200).json({
