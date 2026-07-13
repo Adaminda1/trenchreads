@@ -153,7 +153,7 @@ function startMessage() {
     `/activate &lt;tr_key&gt; — unlock pro access\n` +
     `/status — check your pro status\n` +
     `/help — show this menu\n\n` +
-    `<b>Free tier:</b> 3 scans/day, core risk score\n` +
+    `<b>Free tier:</b> 1 scan/day, core risk score\n` +
     `<b>Pro tier:</b> unlimited scans + AI verdict + top holder list + dev holdings + tax breakdown\n\n` +
     `Get pro at trenchreads.vercel.app (5 USDC one-time)`
   );
@@ -222,7 +222,7 @@ async function handleScan(chatId, address) {
     const limit = await checkTelegramFreeLimit(chatId);
     if (!limit.allowed) {
       return sendMsg(chatId,
-        `⛔ <b>Daily limit reached (3/3 scans used)</b>\n\n` +
+        `⛔ <b>Daily limit reached (1/1 scans used)</b>\n\n` +
         `Upgrade to pro for unlimited scans.\n\n` +
         `🔗 Get your key at trenchreads.vercel.app (5 USDC one-time)\n` +
         `Then run: <code>/activate tr_yourkey</code>\n\n` +

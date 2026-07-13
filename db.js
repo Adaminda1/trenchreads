@@ -96,11 +96,9 @@ export async function checkFreeLimit(ip) {
       INSERT INTO free_usage (ip, count, date) VALUES (${ip}, 1, ${today})
       ON CONFLICT (ip) DO UPDATE SET count = 1, date = ${today}
     `;
-    return { allowed: true, remaining: 2 };
+    return { allowed: true, remaining: 0 };
   }
-  if (rows[0].count >= 3) return { allowed: false, remaining: 0 };
-  await sql`UPDATE free_usage SET count = count + 1 WHERE ip = ${ip}`;
-  return { allowed: true, remaining: 3 - rows[0].count - 1 };
+  return { allowed: false, remaining: 0 };
 }
 
 // ── Key creation (web Pro — lifetime/monthly/yearly) ───────────────────────
@@ -129,8 +127,8 @@ export async function createApiKey({ email, name, tier = 'free' }) {
     : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days for paid tiers
 
   await sql`
-    INSERT INTO api_keys (key, email, owner_name, plan, tier, daily_limit, status, expires_at)
-    VALUES (${key}, ${email || null}, ${name || null}, 'api', ${tier}, ${tierConfig.calls}, 'active', ${expiresAt})
+    INSERT INTO api_keys (key, owner_email, owner_name, tier, daily_limit, status, expires_at)
+    VALUES (${key}, ${email || null}, ${name || null}, ${tier}, ${tierConfig.calls}, 'active', ${expiresAt})
   `;
   return { key, tier, daily_limit: tierConfig.calls, expires_at: expiresAt };
 }
@@ -236,10 +234,10 @@ export async function activateTelegramPro(chatId, proKey) {
   if (!keyRow) return { success: false, error: 'Invalid or expired Pro key.' };
   await sql`
     INSERT INTO telegram_users (chat_id, pro_key, email)
-    VALUES (${String(chatId)}, ${proKey}, ${keyRow.email || null})
+    VALUES (${String(chatId)}, ${proKey}, ${keyRow.owner_email || null})
     ON CONFLICT (chat_id) DO UPDATE SET pro_key = ${proKey}, activated_at = NOW()
   `;
-  return { success: true, email: keyRow.email };
+  return { success: true, email: keyRow.owner_email };
 }
 
 // ── Telegram: check pro status ─────────────────────────────────────────────
@@ -265,11 +263,9 @@ export async function checkTelegramFreeLimit(chatId) {
       INSERT INTO telegram_free_usage (chat_id, count, date) VALUES (${id}, 1, ${today})
       ON CONFLICT (chat_id) DO UPDATE SET count = 1, date = ${today}
     `;
-    return { allowed: true, remaining: 2 };
+    return { allowed: true, remaining: 0 };
   }
-  if (rows[0].count >= 3) return { allowed: false, remaining: 0 };
-  await sql`UPDATE telegram_free_usage SET count = count + 1 WHERE chat_id = ${id}`;
-  return { allowed: true, remaining: 3 - rows[0].count - 1 };
+  return { allowed: false, remaining: 0 };
 }
 
 // ── Admin helpers ──────────────────────────────────────────────────────────

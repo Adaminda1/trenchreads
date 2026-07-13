@@ -688,7 +688,7 @@ async function run() {
     hideLoad();
     if (S.error) {
       const msgs = {
-        free_limit_reached: '⛔ Daily limit reached (3 scans/day). Upgrade to Pro for unlimited scans — 5 USDC one-time.',
+        free_limit_reached: '⛔ Daily limit reached (1 scan/day). Upgrade to Pro for unlimited scans — 5 USDC one-time.',
         CA_required: '⚠️ Please enter a valid token address.',
       };
       showErr(msgs[S.error] || S.error);
