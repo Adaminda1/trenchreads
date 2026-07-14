@@ -379,6 +379,12 @@ footer a{font-size:11px}
   <div id="mktEl" class="mg"></div>
   <div id="mBS"></div>
 
+  <!-- Rug Risk permanent explainer -->
+  <div style="margin-top:10px;padding:12px 14px;background:var(--sur2);border-radius:8px;border-left:3px solid var(--warn);font-size:12px;line-height:1.65;color:var(--mu)">
+    <div style="font-weight:600;color:var(--text);margin-bottom:4px">💡 Why Rug Risk % matters</div>
+    Market cap is a <em>theoretical</em> number — price × total supply. Liquidity is the <em>actual</em> money sitting in the pool that can absorb sells. Rug Risk % shows how much of that theoretical value is backed by real liquidity — the number in parentheses (Critical / Severe / High / Elevated / Healthy) tells you the danger level at a glance, since a <strong>lower</strong> percentage actually means <strong>higher</strong> risk. A single large sell, or the liquidity being pulled entirely, can crash market cap 80–90%+ in minutes — with no warning on the chart beforehand. Always re-check this number close to the time you plan to buy or sell, not just once.
+  </div>
+
   <!-- Holders -->
   <div id="holderSec">
     <div class="sl">Holder Concentration</div>
@@ -440,7 +446,7 @@ footer a{font-size:11px}
       <ul class="tier-features">
         <li>Risk score + verdict</li>
         <li>Security flags</li>
-        <li>Liq/MCap ratio</li>
+        <li>Rug Risk %</li>
         <li>Test &amp; integrate</li>
       </ul>
     </div>
@@ -552,7 +558,7 @@ footer a{font-size:11px}
 });
 <span class="ck">const</span> { score, risk_level, verdict, flags, ai_verdict } = <span class="ck">await</span> res.json();
 <span class="cm">// score: 34 | risk_level: "HIGH" | verdict: "HIGH RISK – AVOID"</span>
-<span class="cm">// flags: ["Rug Exit Risk 0.34% Liq/MCap", "Mintable Supply"]</span>
+<span class="cm">// flags: ["Severe Rug Risk 0.34% (Rug Risk %)", "Mintable Supply"]</span>
 <span class="cm">// ai_verdict: "Only 0.34% of mcap is liquid — avoid."</span></pre>
   </div>
 
@@ -771,14 +777,15 @@ function buildFlags(dex, sec, sc) {
     flags.push({ ic:'🚨', t:`Critically Low Liquidity ($${f(liq)})`, tc:'rd', d:`Only $${f(liq)} in liquidity. A single medium sell will crash the price instantly.`, sev:3 });
   if (liq > 0 && mcap > 0) {
     const rugRatio = (liq / mcap) * 100;
+    const crashPct = Math.min(99, Math.round(100 - rugRatio));
     if (rugRatio < 0.5)
-      flags.push({ ic:'🚨', t:`Critical Rug Risk — ${rugRatio.toFixed(2)}% Liq/MCap`, tc:'rd', d:`Only ${rugRatio.toFixed(2)}% of mcap is liquid. Severe exit trap — large holders can dump at decent prices while smaller holders face near-zero exit.`, sev:3 });
+      flags.push({ ic:'🚨', t:`Critical Rug Risk — ${rugRatio.toFixed(2)}% (Rug Risk %)`, tc:'rd', d:`Only ${rugRatio.toFixed(2)}% of mcap is liquid. If liquidity is pulled or a large holder dumps, mcap can collapse toward its liquidity floor — a crash of ${crashPct}%+ is realistic, often in minutes with no warning.`, sev:3 });
     else if (rugRatio < 1)
-      flags.push({ ic:'🚨', t:`Rug Exit Risk — ${rugRatio.toFixed(2)}% Liq/MCap`, tc:'rd', d:`Only ${rugRatio.toFixed(2)}% of mcap sits in liquidity. Large holders can exit at better prices than retail — slippage risk is high on any significant sell.`, sev:3 });
+      flags.push({ ic:'🚨', t:`Severe Rug Risk — ${rugRatio.toFixed(2)}% (Rug Risk %)`, tc:'rd', d:`Only ${rugRatio.toFixed(2)}% of mcap sits in liquidity. Large holders can exit at better prices than retail before the chart shows anything wrong — a sudden ${crashPct}%+ collapse is a real possibility if liquidity thins further or gets pulled.`, sev:3 });
     else if (rugRatio < 3)
-      flags.push({ ic:'🟡', t:`Low Rug Buffer — ${rugRatio.toFixed(1)}% Liq/MCap`, tc:'yl', d:`Liquidity cushion is thin at ${rugRatio.toFixed(1)}%. Whale sells will move price significantly — size your position carefully.`, sev:2 });
+      flags.push({ ic:'🟡', t:`High Rug Risk — ${rugRatio.toFixed(1)}% (Rug Risk %)`, tc:'yl', d:`Liquidity cushion is thin at ${rugRatio.toFixed(1)}%. A single large sell moves price sharply, and a liquidity pull could wipe out ${crashPct}%+ of market cap almost instantly. Size your position with that in mind.`, sev:2 });
     else if (rugRatio < 5)
-      flags.push({ ic:'🟡', t:`Thin Liquidity — ${rugRatio.toFixed(1)}% Liq/MCap`, tc:'yl', d:`Liq/MCap of ${rugRatio.toFixed(1)}% is below ideal. Acceptable for small caps but monitor liquidity depth before taking a large position.`, sev:1 });
+      flags.push({ ic:'🟡', t:`Elevated Rug Risk — ${rugRatio.toFixed(1)}% (Rug Risk %)`, tc:'yl', d:`Rug Risk is at ${rugRatio.toFixed(1)}%, below ideal. Workable for small caps, but re-check this number close to when you actually trade — thin liquidity can turn into a fast, deep crash with little warning on the chart.`, sev:1 });
   }
   const st = sec?.sellTax ? parseFloat(sec.sellTax) : 0;
   if (st > 10) flags.push({ ic:'🟡', t:`High Sell Tax (${sec.sellTax}%)`, tc:'yl', d:`You lose ${sec.sellTax}% every time you sell.`, sev:2 });
@@ -881,7 +888,7 @@ function render(S) {
     { l:'24h Change', v: chg != null ? `${chg >= 0 ? '+' : ''}${parseFloat(chg).toFixed(2)}%` : 'n/a' },
     { l:'Age',        v: ageDays != null ? ageDays < 1 ? `${ageHours}h` : `${ageDays}d` : 'n/a' },
     { l:'Holders',    v: holders ? Number(holders).toLocaleString() : 'n/a' },
-    { l:'Liq/MCap',   v: liq > 0 && mcap > 0 ? `${((liq/mcap)*100).toFixed(1)}%` : 'n/a' },
+    { l:'Rug Risk',   v: liq > 0 && mcap > 0 ? (() => { const r=(liq/mcap)*100; const tier = r<0.5?'Critical':r<1?'Severe':r<3?'High':r<5?'Elevated':'Healthy'; return `${r.toFixed(1)}% (${tier})`; })() : 'n/a' },
     { l:'Buys 24h',   v: buys  ? buys.toLocaleString()  : 'n/a' },
     { l:'Sells 24h',  v: sells ? sells.toLocaleString() : 'n/a' },
   ].map(c => `<div class="mc"><div class="mn">${c.l}</div><div class="mv">${c.v}</div></div>`).join('');

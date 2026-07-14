@@ -69,9 +69,9 @@ function buildMessage(d, address, isPro) {
   let rugLine = '';
   if (rugRatio !== null) {
     const r = rugRatio.toFixed(2);
-    if (rugRatio < 1)      rugLine = `\n🔴 <b>Rug Exit Risk — ${r}% Liq/MCap</b>\nInsiders can dump and still exit clean. You may not.`;
-    else if (rugRatio < 3) rugLine = `\n🟡 Low Rug Buffer (${r}%) — thin cushion, watch whale wallets`;
-    else                   rugLine = `\n✅ Rug Exit Risk: ${r}% — ${rugRatio > 10 ? 'healthy' : 'acceptable'}`;
+    if (rugRatio < 1)      rugLine = `\n🔴 <b>Severe Rug Risk — ${r}%</b>\nInsiders can dump and still exit clean. You may not.`;
+    else if (rugRatio < 3) rugLine = `\n🟡 High Rug Risk (${r}%) — thin cushion, watch whale wallets`;
+    else                   rugLine = `\n✅ Rug Risk: ${r}% — ${rugRatio > 10 ? 'healthy' : 'acceptable'}`;
   }
 
   // Flags — derived from breakdown (same source as web UI)
